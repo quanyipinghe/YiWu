@@ -9,14 +9,14 @@
 - **内容总数**：**303 条**（超越目标 300 条）。
 - **原有历史条目保留情况**：**33 / 33 条历史 ID 100% 原样保留**，收藏（`favorites`）、浏览足迹（`history`）与本轮已抽取记录（`round`）在 `localStorage`（`yiwu:v1:data`）中无缝兼容，不会因升级导致数据丢失或失效。
 - **按类别与批次模块化拆分结构**：
-  - 统一汇总入口：[src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts)
-  - 历史保留批次（33 条）：[src/data/batches/legacyProverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/legacyProverbs.ts)
-  - 第一批 · 俗语扩充（47 条）：[src/data/batches/batch1-suyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch1-suyu.ts)
-  - 第二批 · 成语扩充（54 条）：[src/data/batches/batch2-chengyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch2-chengyu.ts)
-  - 第三批 · 惯用语扩充（41 条）：[src/data/batches/batch3-guanyongyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch3-guanyongyu.ts)
-  - 第四批 · 格言扩充（42 条）：[src/data/batches/batch4-geyan.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch4-geyan.ts)
-  - 第五批 · 箴言扩充（44 条）：[src/data/batches/batch5-zhenyan.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch5-zhenyan.ts)
-  - 第六批 · 警句扩充（42 条）：[src/data/batches/batch6-jingju.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch6-jingju.ts)
+  - 统一汇总入口：[src/data/proverbs.ts](./src/data/proverbs.ts)
+  - 历史保留批次（33 条）：[src/data/batches/legacyProverbs.ts](./src/data/batches/legacyProverbs.ts)
+  - 第一批 · 俗语扩充（47 条）：[src/data/batches/batch1-suyu.ts](./src/data/batches/batch1-suyu.ts)
+  - 第二批 · 成语扩充（54 条）：[src/data/batches/batch2-chengyu.ts](./src/data/batches/batch2-chengyu.ts)
+  - 第三批 · 惯用语扩充（41 条）：[src/data/batches/batch3-guanyongyu.ts](./src/data/batches/batch3-guanyongyu.ts)
+  - 第四批 · 格言扩充（42 条）：[src/data/batches/batch4-geyan.ts](./src/data/batches/batch4-geyan.ts)
+  - 第五批 · 箴言扩充（44 条）：[src/data/batches/batch5-zhenyan.ts](./src/data/batches/batch5-zhenyan.ts)
+  - 第六批 · 警句扩充（42 条）：[src/data/batches/batch6-jingju.ts](./src/data/batches/batch6-jingju.ts)
 
 ---
 
@@ -111,7 +111,7 @@
 
 ## 六、自动化校验与核验说明
 
-可通过以下命令随时运行内容校验脚本 [scripts/validate-content.mjs](file:///Users/quanyipinghe/Documents/AI/family/YiWu/scripts/validate-content.mjs)：
+可通过以下命令随时运行内容校验脚本 [scripts/validate-content.mjs](./scripts/validate-content.mjs)：
 
 ```bash
 npm run check:content

@@ -109,24 +109,24 @@ server {
 
 ### 2. 本项目的实操兼容方案
 
-1. **单一产物直接以 Chrome 66 为目标（[vite.config.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/vite.config.ts)）**：
+1. **单一产物直接以 Chrome 66 为目标（[vite.config.ts](./vite.config.ts)）**：
    - `build.target = 'chrome66'`、`build.cssTarget = 'chrome66'`、`esbuild.target = 'chrome66'`。
    - 显式设置 `esbuild.supported = { 'optional-catch-binding': false }`，强制将 React 18 生产包及源码中的无参 `catch {}` 转译为 `catch (e) {}`。
    - `rollupOptions.output.format = 'iife'` + `inlineDynamicImports = true`，打包为单一经典脚本 `<script defer src="./assets/app-[hash].js">`，完全不依赖 ES Module 动态拆分或 `modulepreload`。
 2. **源码级运行时 API 约束**：
    - `tsconfig.json` 将 `lib` 限制为 `["ES2018", "DOM", "DOM.Iterable"]`，从编译期阻止调用 ES2019+ 标准库方法。
    - 不使用 `structuredClone`、`crypto.randomUUID`、`Array.prototype.at`、`Object.fromEntries`、`Object.hasOwn`、`ResizeObserver`。
-3. **CSS 兼容性约束（[src/styles/app.css](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/styles/app.css)）**：
+3. **CSS 兼容性约束（[src/styles/app.css](./src/styles/app.css)）**：
    - 纯手写标准 CSS，不使用 `:focus-visible`、`:has()`、`@container`、CSS 嵌套、Flexbox `gap`、`aspect-ratio`、`clamp()`、`dvh`/`svh`、`backdrop-filter`。
    - 聚焦样式使用独立的 `.tv-focusable:focus` 与 `.tv-focusable[data-tv-focused="true"]` 规则，不与任何新伪类合并在同一选择器列表中。
-4. **构建后自动产物核验（[scripts/check-compat.mjs](file:///Users/quanyipinghe/Documents/AI/family/YiWu/scripts/check-compat.mjs)）**：
+4. **构建后自动产物核验（[scripts/check-compat.mjs](./scripts/check-compat.mjs)）**：
    - 每次执行 `npm run build` 时，自动使用 `acorn` 以 `ecmaVersion: 2018, sourceType: 'script'` 解析最终生成的 `dist/assets/app-*.js`，并扫描禁用运行时 API 与禁用 CSS 属性。
 
 ---
 
 ## 五、遥控器映射配置方法
 
-遥控器按键映射集中在 [src/tv/keymap.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/tv/keymap.ts) 中管理，统一由 [src/tv/InputManager.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/tv/InputManager.ts) 监听，不在各页面散落绑定 `keydown`。
+遥控器按键映射集中在 [src/tv/keymap.ts](./src/tv/keymap.ts) 中管理，统一由 [src/tv/InputManager.ts](./src/tv/InputManager.ts) 监听，不在各页面散落绑定 `keydown`。
 
 ### 1. 默认映射
 
@@ -158,7 +158,7 @@ server {
 
 ## 六、可选 Android WebView 返回桥接说明
 
-Android 原生返回键（`KEYCODE_BACK = 4`）属于系统层按键，默认不一定作为网页 DOM `keydown` 事件传递给 WebView，因此页面一方面在所有子页面、阅读滚动模式和弹窗中提供了**可见且可聚焦的「返回 / 取消」按钮**，另一方面在 [src/tv/backBridge.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/tv/backBridge.ts) 中挂载了宿主桥接接口 `window.tvApp.handleBack()`。
+Android 原生返回键（`KEYCODE_BACK = 4`）属于系统层按键，默认不一定作为网页 DOM `keydown` 事件传递给 WebView，因此页面一方面在所有子页面、阅读滚动模式和弹窗中提供了**可见且可聚焦的「返回 / 取消」按钮**，另一方面在 [src/tv/backBridge.ts](./src/tv/backBridge.ts) 中挂载了宿主桥接接口 `window.tvApp.handleBack()`。
 
 ### Android 宿主接入示例（Kotlin / Java）
 
@@ -182,7 +182,7 @@ override fun onBackPressed() {
 
 ## 七、内容库架构、画面系统与添加新内容的方法
 
-项目内置 **303 条** 高质量完整内容（详情见 [CONTENT_REPORT.md](file:///Users/quanyipinghe/Documents/AI/family/YiWu/CONTENT_REPORT.md)），按批次拆分在 `src/data/batches/` 下，由 [src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts) 统一汇总，类型定义在 [src/data/types.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/types.ts)，视觉素材目录定义在 [src/data/sceneCatalog.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/sceneCatalog.ts)。
+项目内置 **303 条** 高质量完整内容（详情见 [CONTENT_REPORT.md](./CONTENT_REPORT.md)），按批次拆分在 `src/data/batches/` 下，由 [src/data/proverbs.ts](./src/data/proverbs.ts) 统一汇总，类型定义在 [src/data/types.ts](./src/data/types.ts)，视觉素材目录定义在 [src/data/sceneCatalog.ts](./src/data/sceneCatalog.ts)。
 
 ### 1. 可复用 SVG 故事画面系统
 - **18 种场景背景 (`SceneKind`)**：客厅 (`living`)、厨房/餐桌 (`kitchen`)、书房 (`study`)、教室 (`classroom`)、办公室 (`office`)、商店/市场 (`market`)、街道 (`road`)、车站 (`station`)、庭院 (`courtyard`)、社区 (`community`)、田地/果园 (`orchard`)、山路 (`mountain`)、河边 (`river`)、小桥 (`bridge`)、风雨归途 (`rain`)、工坊/修理台 (`workshop`)、网络生活 (`digital`)、抽象寓意 (`abstract`)。
@@ -204,7 +204,7 @@ override fun onBackPressed() {
 
 ## 八、数据存储说明与限制
 
-- **存储键名与版本**：统一封装于 [src/storage/storage.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/storage/storage.ts)，命名空间为 `yiwu:v1:data`（损坏数据自动备份至 `yiwu:v1:corrupt` 并初始化干净状态）。
+- **存储键名与版本**：统一封装于 [src/storage/storage.ts](./src/storage/storage.ts)，命名空间为 `yiwu:v1:data`（损坏数据自动备份至 `yiwu:v1:corrupt` 并初始化干净状态）。
 - **存储限制**：
   1. 数据仅保存在当前电视/设备的浏览器 `localStorage` 中，卸载应用、清除 WebView 数据或无痕浏览会导致数据清空。
   2. 当检测到 `localStorage` 被禁用或配额已满时，应用不会崩溃，会自动降级为**当前会话内存模式**并在顶部显示温和提示。

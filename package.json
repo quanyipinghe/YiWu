@@ -1,0 +1,35 @@
+{
+  "name": "yiwu",
+  "private": true,
+  "version": "1.0.0",
+  "description": "一日一悟：每天一句老话，看懂一点生活。面向 Android TV（Chrome 66）的遥控器友好 Web 应用。",
+  "type": "module",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/check-compat.mjs",
+    "build:only": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:compat": "node scripts/check-compat.mjs",
+    "e2e": "node scripts/e2e-cdp.mjs"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "acorn": "8.14.0",
+    "jsdom": "25.0.1",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
+  }
+}

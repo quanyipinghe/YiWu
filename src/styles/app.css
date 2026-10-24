@@ -1,0 +1,1264 @@
+/**
+ * 一日一悟 全局样式表（面向 Chrome 66 / Android TV 远距离阅读）。
+ *
+ * 兼容性硬性约束：
+ * - 不使用 :focus-visible、:has()、@container、CSS 嵌套、Flexbox gap、
+ *   aspect-ratio、clamp()、dvh/svh、backdrop-filter。
+ * - 所有间距使用明确的 margin / padding。
+ * - 所有可操作元素（.tv-focusable）使用独立的 :focus 与 [data-tv-focused="true"] 规则，
+ *   获得焦点时背景色明显改变为暖金色 #F2C879，文字同步变为深色 #1C2028，并带 #FFF2CC 边框与 outline。
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  background-color: #14161c;
+  color: #f4f1ea;
+  font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 默认基准字号（针对 1280×720 常见 Android TV WebView 视口） */
+html {
+  font-size: 18px;
+}
+
+code,
+kbd {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+/* ================================================================
+   整体框架与电视安全留白（四周保留 4%～5% 安全区域）
+   ================================================================ */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  padding: 3.5vh 4.2vw;
+  background-color: #14161c;
+  color: #f4f1ea;
+}
+
+.app-shell.mode-normal {
+  padding: 2.5vh 3.5vw;
+}
+
+/* 顶部栏 */
+.app-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.9rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #2b303d;
+  flex-shrink: 0;
+}
+
+.brand-block {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.brand-seal {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.55rem;
+  background-color: #b8432f;
+  color: #f4f1ea;
+  font-size: 1.55rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.9rem;
+  flex-shrink: 0;
+  border: 1px solid #d96b56;
+}
+
+.brand-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f4f1ea;
+}
+
+.brand-subtitle {
+  margin: 0.1rem 0 0 0;
+  font-size: 0.92rem;
+  color: #b9b4a8;
+}
+
+.header-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-page-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #f2c879;
+}
+
+.header-divider {
+  margin: 0 0.6rem;
+  color: #6c7280;
+}
+
+.header-date {
+  font-size: 1.02rem;
+  color: #d6d1c4;
+}
+
+.header-badge {
+  margin-left: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.header-badge-warn {
+  background-color: #4a2c1d;
+  color: #ffd599;
+  border: 1px solid #b86f38;
+}
+
+.header-debug-pill {
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.35rem;
+  background-color: #222631;
+  color: #b9b4a8;
+  border: 1px solid #394052;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.header-debug-pill.is-active {
+  background-color: #2f3b2f;
+  color: #c7f0c7;
+  border-color: #5b8c5b;
+}
+
+/* 存储降级提示栏 */
+.storage-notice {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #2d231c;
+  border: 1px solid #8c5a32;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.9rem;
+  flex-shrink: 0;
+}
+
+.storage-notice-text {
+  font-size: 0.95rem;
+  color: #f7dfc2;
+  margin-right: 1rem;
+}
+
+/* 主体布局：左侧主导航 + 右侧内容 */
+.app-body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-nav {
+  width: 11.5rem;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+}
+
+.nav-item {
+  margin-bottom: 0.7rem;
+}
+
+.nav-item:last-child {
+  margin-bottom: 0;
+}
+
+.app-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0.3rem 0.4rem 0.6rem 0.3rem;
+}
+
+.app-main:focus {
+  outline: none;
+}
+
+/* 底部遥控器提示栏 */
+.app-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  margin-top: 0.85rem;
+  border-top: 1px solid #2b303d;
+  color: #b9b4a8;
+  font-size: 0.92rem;
+  flex-shrink: 0;
+}
+
+.footer-hints {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hint-item {
+  margin-right: 1.3rem;
+}
+
+.hint-key {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  margin-right: 0.3rem;
+  border-radius: 0.3rem;
+  background-color: #222631;
+  border: 1px solid #3b4254;
+  color: #f2c879;
+  font-size: 0.85rem;
+}
+
+.hint-reading-active {
+  color: #f2c879;
+  font-weight: 600;
+}
+
+.footer-mode-tag {
+  color: #938e82;
+  font-size: 0.88rem;
+}
+
+/* ================================================================
+   可聚焦元素与按钮基础样式（核心硬性要求：聚焦必须明显改变背景色）
+   ================================================================ */
+
+.tv-focusable {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #222631;
+  color: #f4f1ea;
+  border: 2px solid #394052;
+  border-radius: 0.55rem;
+  padding: 0.7rem 1.25rem;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+/* 桌面鼠标悬停仅做轻微边框辅助，绝不替代 TV 焦点背景色 */
+.tv-focusable:hover {
+  border-color: #6e778f;
+}
+
+/* 禁用态 */
+.tv-focusable:disabled,
+.tv-focusable[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* 变体：主要行动按钮（未聚焦时为深朱砂底色） */
+.btn-primary {
+  background-color: #8f3222;
+  color: #f4f1ea;
+  border-color: #c45642;
+}
+
+/* 变体：危险操作按钮 */
+.btn-danger {
+  background-color: #4a2020;
+  color: #ffd6d6;
+  border-color: #8c3b3b;
+}
+
+/* 变体：轻量按钮 */
+.btn-ghost {
+  background-color: #1d212b;
+  color: #d6d1c4;
+  border-color: #343b4c;
+}
+
+/* 变体：左侧主导航按钮 */
+.btn-nav {
+  width: 100%;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  font-size: 1.15rem;
+  background-color: #222631;
+  color: #f4f1ea;
+}
+
+.nav-indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #d96b56;
+  margin-left: 0.5rem;
+}
+
+/* 变体：分类筛选 / 步骤标签按钮 */
+.btn-chip {
+  padding: 0.5rem 1rem;
+  font-size: 0.98rem;
+  border-radius: 2rem;
+}
+
+/* 变体：内容卡片按钮（收藏页、足迹页） */
+.btn-card {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  background-color: #222631;
+  color: #f4f1ea;
+}
+
+/* ----------------------------------------------------------------
+   状态区分：selected（当前选中项/当前所在页） vs focused（遥控器焦点）
+   selected 使用朱砂红边框与深暖底色；focused 使用明快暖金背景 #F2C879
+   ---------------------------------------------------------------- */
+
+.tv-focusable.is-selected {
+  background-color: #332425;
+  color: #f4f1ea;
+  border-color: #cf5c46;
+}
+
+/* 独立的基础 :focus 规则 —— 所有可操作元素聚焦时背景色必须明显变为 #F2C879 */
+.tv-focusable:focus {
+  background-color: #f2c879;
+  color: #1c2028;
+  border-color: #fff2cc;
+  outline: 3px solid #fff2cc;
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+/* 与 DOM 焦点同步的 data-tv-focused 属性规则（双保险，不与任何不兼容伪类合并） */
+.tv-focusable[data-tv-focused="true"] {
+  background-color: #f2c879;
+  color: #1c2028;
+  border-color: #fff2cc;
+  outline: 3px solid #fff2cc;
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+/* 当 selected 元素同时处于 focused 时，同样必须变成暖金聚焦背景，并通过左边框保留选中标识 */
+.tv-focusable.is-selected:focus {
+  background-color: #f2c879;
+  color: #1c2028;
+  border-color: #fff2cc;
+  box-shadow: inset 6px 0 0 #b8432f;
+}
+
+.tv-focusable.is-selected[data-tv-focused="true"] {
+  background-color: #f2c879;
+  color: #1c2028;
+  border-color: #fff2cc;
+  box-shadow: inset 6px 0 0 #b8432f;
+}
+
+/* 卡片或导航按钮获得焦点时，内部各级文字与徽标同步调整为深色高对比度 */
+.tv-focusable:focus .card-row-title,
+.tv-focusable:focus .card-row-desc,
+.tv-focusable:focus .history-date-badge,
+.tv-focusable:focus .history-read-more,
+.tv-focusable:focus .nav-label {
+  color: #1c2028;
+}
+
+.tv-focusable[data-tv-focused="true"] .card-row-title,
+.tv-focusable[data-tv-focused="true"] .card-row-desc,
+.tv-focusable[data-tv-focused="true"] .history-date-badge,
+.tv-focusable[data-tv-focused="true"] .history-read-more,
+.tv-focusable[data-tv-focused="true"] .nav-label {
+  color: #1c2028;
+}
+
+.tv-focusable:focus .category-badge,
+.tv-focusable[data-tv-focused="true"] .category-badge {
+  background-color: #1c2028;
+  color: #f2c879;
+  border-color: #1c2028;
+}
+
+.tv-focusable:focus .nav-indicator,
+.tv-focusable[data-tv-focused="true"] .nav-indicator {
+  background-color: #1c2028;
+}
+
+/* ================================================================
+   徽章与公共排版
+   ================================================================ */
+
+.badge-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  margin-right: 0.5rem;
+  border-radius: 0.35rem;
+  background-color: #b8432f;
+  color: #f4f1ea;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.tag-badge {
+  display: inline-block;
+  padding: 0.18rem 0.6rem;
+  margin-right: 0.45rem;
+  border-radius: 0.35rem;
+  background-color: #262b38;
+  color: #d6d1c4;
+  border: 1px solid #394052;
+  font-size: 0.85rem;
+}
+
+.page-section {
+  width: 100%;
+}
+
+.page-top-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #f4f1ea;
+}
+
+.section-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.96rem;
+  color: #b9b4a8;
+}
+
+/* 空状态卡片 */
+.empty-card {
+  background-color: #1b1f29;
+  border: 1px solid #2e3444;
+  border-radius: 0.75rem;
+  padding: 2rem 1.8rem;
+  text-align: left;
+}
+
+.empty-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.35rem;
+  color: #f4f1ea;
+}
+
+.empty-desc {
+  margin: 0 0 1.25rem 0;
+  font-size: 1.02rem;
+  color: #c4bfb4;
+}
+
+/* ================================================================
+   1. 今日页
+   ================================================================ */
+
+.today-stage {
+  width: 100%;
+}
+
+.proverb-card {
+  background-color: #1b1f29;
+  border: 1px solid #303748;
+  border-radius: 0.85rem;
+  padding: 1.6rem 2rem;
+}
+
+.card-top-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.meta-pill {
+  display: inline-block;
+  padding: 0.22rem 0.7rem;
+  border-radius: 0.35rem;
+  background-color: #272c3a;
+  color: #f2c879;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.meta-date {
+  font-size: 0.95rem;
+  color: #b9b4a8;
+}
+
+.unrevealed-emblem {
+  display: flex;
+  flex-direction: row;
+  margin: 0.6rem 0 1rem 0;
+}
+
+.unrevealed-emblem span {
+  width: 2.6rem;
+  height: 2.6rem;
+  margin-right: 0.55rem;
+  border-radius: 0.45rem;
+  background-color: #242936;
+  border: 1px solid #3c4459;
+  color: #f2c879;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unrevealed-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.65rem;
+  color: #f4f1ea;
+}
+
+.unrevealed-desc {
+  margin: 0 0 1.4rem 0;
+  font-size: 1.08rem;
+  color: #cfc9bc;
+  max-width: 44rem;
+}
+
+.proverb-main-text {
+  margin: 0.3rem 0 1.1rem 0;
+  font-size: 2.15rem;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: 0.03em;
+  color: #f4f1ea;
+}
+
+.plain-explanation-box {
+  background-color: #222734;
+  border-left: 4px solid #f2c879;
+  border-radius: 0.45rem;
+  padding: 0.95rem 1.25rem;
+  margin-bottom: 1.35rem;
+}
+
+.box-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f2c879;
+  margin-bottom: 0.3rem;
+}
+
+.plain-explanation-text {
+  margin: 0;
+  font-size: 1.12rem;
+  color: #f4f1ea;
+}
+
+.today-action-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.today-action-row .tv-focusable {
+  margin-right: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.remote-inline-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #9e998d;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.revealed-card.is-revealing {
+  animation: cardFadeIn 220ms ease-out;
+}
+
+/* ================================================================
+   2. 详情页（三段式阅读 + 阅读滚动模式）
+   ================================================================ */
+
+.detail-step-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.detail-step-bar .tv-focusable {
+  margin-right: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.detail-reading-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.detail-step-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f2c879;
+  margin-right: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.detail-article-box {
+  background-color: #1b1f29;
+  border: 2px solid #2e3444;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.95rem;
+  max-height: 54vh;
+  overflow-y: auto;
+}
+
+.detail-article-box.is-reading-mode {
+  border-color: #f2c879;
+  background-color: #202532;
+}
+
+.detail-proverb-title {
+  margin: 0.45rem 0 0.9rem 0;
+  font-size: 1.9rem;
+  color: #f4f1ea;
+}
+
+.detail-block {
+  background-color: #232836;
+  border-radius: 0.55rem;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-block:last-child {
+  margin-bottom: 0;
+}
+
+.detail-block-subtle {
+  background-color: #1f2430;
+  border: 1px solid #2e3546;
+}
+
+.detail-block-boundary {
+  border-left: 4px solid #d96b56;
+}
+
+.detail-block-question {
+  border-left: 4px solid #f2c879;
+}
+
+.detail-block-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.95rem;
+  color: #f2c879;
+}
+
+.detail-block-text {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #f4f1ea;
+}
+
+.detail-grid-two {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  margin-bottom: 0.75rem;
+}
+
+.detail-grid-two > .detail-block {
+  flex: 1 1 50%;
+  margin-bottom: 0;
+}
+
+.detail-grid-two > .detail-block:first-child {
+  margin-right: 0.75rem;
+}
+
+/* 四格生活故事 */
+.story-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.story-title {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #f4f1ea;
+}
+
+.story-fiction-badge {
+  display: inline-block;
+  padding: 0.18rem 0.65rem;
+  border-radius: 0.35rem;
+  background-color: #2b303f;
+  color: #d6d1c4;
+  font-size: 0.85rem;
+}
+
+.story-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: -0.35rem;
+}
+
+.story-panel {
+  width: calc(50% - 0.7rem);
+  margin: 0.35rem;
+  background-color: #232836;
+  border: 1px solid #343b4d;
+  border-radius: 0.55rem;
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.story-panel-top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.story-panel-num {
+  font-size: 0.84rem;
+  color: #b9b4a8;
+}
+
+.story-panel-beat {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f2c879;
+}
+
+.story-scene-svg {
+  width: 100%;
+  height: 3.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.story-panel-text {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #f4f1ea;
+}
+
+/* 出处栏 */
+.detail-source-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 0.55rem;
+  border-top: 1px solid #2e3444;
+  font-size: 0.92rem;
+  color: #c4bfb4;
+}
+
+.source-status-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  margin-right: 0.6rem;
+  border-radius: 0.3rem;
+  background-color: #2c3242;
+  color: #f2c879;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.detail-bottom-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.detail-bottom-actions .tv-focusable {
+  margin-right: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+/* ================================================================
+   3. 收藏页与足迹页列表
+   ================================================================ */
+
+.filter-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filter-bar .tv-focusable {
+  margin-right: 0.55rem;
+  margin-bottom: 0.45rem;
+}
+
+.fav-card-list,
+.history-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem;
+}
+
+.fav-card-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  margin-bottom: 0.75rem;
+}
+
+.fav-card-row > .btn-card {
+  flex: 1 1 auto;
+  margin-right: 0.65rem;
+}
+
+.fav-card-row > .btn-ghost {
+  flex-shrink: 0;
+}
+
+.history-card-row {
+  margin-bottom: 0.75rem;
+}
+
+.card-row-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.card-row-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f4f1ea;
+}
+
+.card-row-desc {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #cfc9bc;
+}
+
+.history-date-badge {
+  font-size: 0.92rem;
+  color: #f2c879;
+  font-weight: 600;
+}
+
+.history-main-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.history-read-more {
+  font-size: 0.92rem;
+  color: #b9b4a8;
+}
+
+.page-indicator {
+  font-size: 0.98rem;
+  color: #f2c879;
+  font-weight: 600;
+}
+
+.pager-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.pager-bar .tv-focusable {
+  margin-right: 0.85rem;
+}
+
+.pager-status {
+  margin-right: 0.85rem;
+  font-size: 0.98rem;
+  color: #d6d1c4;
+}
+
+/* ================================================================
+   4. 设置页
+   ================================================================ */
+
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-card {
+  background-color: #1b1f29;
+  border: 1px solid #2e3444;
+  border-radius: 0.75rem;
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.settings-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.settings-card-title {
+  margin: 0;
+  font-size: 1.18rem;
+  color: #f4f1ea;
+}
+
+.settings-status-tag {
+  font-size: 0.9rem;
+  color: #f2c879;
+}
+
+.settings-card-desc {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.98rem;
+  color: #cfc9bc;
+}
+
+.settings-btn-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-btn-row .tv-focusable {
+  margin-right: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.settings-inline-feedback {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+  color: #9fe6a0;
+}
+
+.settings-help-list {
+  margin: 0 0 0.85rem 0;
+  padding-left: 1.2rem;
+  font-size: 0.96rem;
+  color: #d6d1c4;
+}
+
+.settings-help-list li {
+  margin-bottom: 0.35rem;
+}
+
+/* ================================================================
+   5. 弹窗（Modal）
+   ================================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(10, 12, 16, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 4vw;
+  z-index: 100;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 34rem;
+  background-color: #1e2330;
+  border: 2px solid #4a536b;
+  border-radius: 0.85rem;
+  padding: 1.5rem 1.75rem;
+  color: #f4f1ea;
+}
+
+.modal-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.35rem;
+  color: #f4f1ea;
+}
+
+.modal-body {
+  font-size: 1.02rem;
+  color: #d6d1c4;
+  margin-bottom: 1.25rem;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.modal-actions .tv-focusable {
+  margin-left: 0.75rem;
+}
+
+.modal-io-hint {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.92rem;
+}
+
+.modal-io-textarea {
+  width: 100%;
+  background-color: #141720;
+  color: #f4f1ea;
+  border: 1px solid #3c4459;
+  border-radius: 0.45rem;
+  padding: 0.6rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.modal-io-status {
+  margin: 0.5rem 0 0 0;
+  color: #f2c879;
+  font-size: 0.9rem;
+}
+
+/* ================================================================
+   6. TV 调试面板
+   ================================================================ */
+
+.tv-debug-panel {
+  position: fixed;
+  right: 1.5vw;
+  bottom: 1.5vh;
+  width: 19rem;
+  background-color: rgba(20, 24, 33, 0.94);
+  border: 1px solid #f2c879;
+  border-radius: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  color: #f4f1ea;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.tv-debug-title {
+  font-weight: 700;
+  color: #f2c879;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid #343b4d;
+  padding-bottom: 0.2rem;
+}
+
+.tv-debug-list {
+  margin: 0;
+}
+
+.tv-debug-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 0.18rem;
+}
+
+.tv-debug-row dt {
+  color: #9e998d;
+  margin-right: 0.5rem;
+}
+
+.tv-debug-row dd {
+  margin: 0;
+  color: #f4f1ea;
+  font-family: monospace;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ================================================================
+   7. 多分辨率与多设备媒体查询
+   适配目标：960×540、1280×720、1920×1080、3840×2160、手机竖屏与桌面
+   ================================================================ */
+
+/* 1920×1080 全高清电视视口：正文约 28～30px 起 */
+@media (min-width: 1600px) {
+  html {
+    font-size: 27px;
+  }
+}
+
+/* 3840×2160 4K 电视视口 */
+@media (min-width: 3000px) {
+  html {
+    font-size: 52px;
+  }
+}
+
+/* 960×540 紧凑电视视口 */
+@media (max-width: 1024px) {
+  html {
+    font-size: 14px;
+  }
+  .app-shell {
+    padding: 2.5vh 3.2vw;
+  }
+  .app-nav {
+    width: 9.5rem;
+    margin-right: 1rem;
+  }
+}
+
+/* 手机竖屏或窄窗口（<= 720px） */
+@media (max-width: 720px) {
+  html {
+    font-size: 15px;
+  }
+  .app-shell {
+    padding: 1rem;
+  }
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header-meta {
+    margin-top: 0.5rem;
+    justify-content: flex-start;
+  }
+  .app-body {
+    flex-direction: column;
+  }
+  .app-nav {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.85rem;
+  }
+  .nav-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .nav-item {
+    width: calc(25% - 0.4rem);
+    margin-right: 0.4rem;
+    margin-bottom: 0;
+  }
+  .btn-nav {
+    padding: 0.55rem 0.65rem;
+    font-size: 0.95rem;
+    justify-content: center;
+  }
+  .detail-grid-two {
+    flex-direction: column;
+  }
+  .detail-grid-two > .detail-block:first-child {
+    margin-right: 0;
+    margin-bottom: 0.75rem;
+  }
+  .story-panel {
+    width: calc(100% - 0.7rem);
+  }
+  .fav-card-row {
+    flex-direction: column;
+  }
+  .fav-card-row > .btn-card {
+    margin-right: 0;
+    margin-bottom: 0.45rem;
+  }
+  .detail-article-box {
+    max-height: none;
+  }
+}
+
+/* 系统级减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .tv-focusable {
+    transition: none;
+  }
+  .revealed-card.is-revealing {
+    animation: none;
+  }
+}

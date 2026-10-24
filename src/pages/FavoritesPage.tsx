@@ -2,7 +2,8 @@
  * 收藏页。
  *
  * 功能与焦点规则：
- * - 顶部分类筛选（全部 + 六大主要类型），状态保存在当前路由项中，从详情返回时保持原筛选。
+ * - 顶部分类筛选（全部 + 六大主要类型），状态保存在当前路由项中，从详情返回时保持原筛选与页码。
+ * - 仅读取轻量摘要（ProverbSummary）并采用分页展示（每页 6 条），避免收藏增多后一次性渲染长列表。
  * - 每张收藏卡片提供「查看详情」(fav-open-{id}) 与「取消收藏」(fav-remove-{id})。
  * - 从详情页返回列表时，自动恢复原卡片焦点与滚动位置。
  * - 切换筛选条件导致原元素消失时，焦点保持在当前筛选项或第一个结果。
@@ -13,9 +14,11 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useAppState } from '../app/AppState';
 import { useRouter } from '../app/router';
 import { CATEGORIES, categoryLabel } from '../data/content';
-import type { Proverb, ProverbCategory } from '../data/types';
+import type { ProverbCategory, ProverbSummary } from '../data/types';
 import { FocusButton } from '../tv/FocusButton';
 import { useFocusGroup, usePageFocus, useTv } from '../tv/TvContext';
+
+export const FAVORITES_PAGE_SIZE = 6;
 
 type FilterKey = 'all' | ProverbCategory;
 
@@ -44,12 +47,12 @@ export function FavoritesPage(): JSX.Element {
       ? (current.state.category as FilterKey)
       : 'all';
 
-  // 解析有效收藏条目（忽略未知内容 ID，防止旧数据崩溃）
+  // 解析有效收藏条目（仅读取轻量摘要，忽略未知内容 ID，防止旧数据崩溃）
   const allFavorites = useMemo(() => {
-    const list: Proverb[] = [];
+    const list: ProverbSummary[] = [];
     for (let i = 0; i < data.favorites.length; i++) {
-      const p = repo.get(data.favorites[i].id);
-      if (p) list.push(p);
+      const s = repo.getSummary(data.favorites[i].id);
+      if (s) list.push(s);
     }
     return list;
   }, [data.favorites, repo]);
@@ -59,12 +62,24 @@ export function FavoritesPage(): JSX.Element {
     return allFavorites.filter((item) => item.category === activeCategory);
   }, [allFavorites, activeCategory]);
 
-  // 待执行的焦点恢复队列（删除收藏或切换筛选后在 useLayoutEffect 中同步执行）
+  const totalPages = Math.max(1, Math.ceil(filtered.length / FAVORITES_PAGE_SIZE));
+  const rawPage =
+    typeof current.state.page === 'number' && current.state.page >= 1
+      ? Math.floor(current.state.page)
+      : 1;
+  const page = Math.min(rawPage, totalPages);
+
+  const pageItems = useMemo(() => {
+    const start = (page - 1) * FAVORITES_PAGE_SIZE;
+    return filtered.slice(start, start + FAVORITES_PAGE_SIZE);
+  }, [filtered, page]);
+
+  // 待执行的焦点恢复队列（删除收藏、切换筛选或翻页后在 useLayoutEffect 中同步执行）
   const pendingFocusRef = useRef<string[] | null>(null);
 
   usePageFocus('favorites', () => {
-    if (filtered.length > 0) {
-      return ['fav-open-' + filtered[0].id, 'fav-filter-' + activeCategory];
+    if (pageItems.length > 0) {
+      return ['fav-open-' + pageItems[0].id, 'fav-filter-' + activeCategory];
     }
     return ['fav-empty-action', 'fav-filter-' + activeCategory, 'fav-filter-all'];
   });
@@ -75,7 +90,7 @@ export function FavoritesPage(): JSX.Element {
       left: '@group:nav',
       right: null,
       up: null,
-      down: filtered.length > 0 ? 'fav-open-' + filtered[0].id : 'fav-empty-action',
+      down: pageItems.length > 0 ? 'fav-open-' + pageItems[0].id : 'fav-empty-action',
     },
     enterTo: 'selected',
   });
@@ -86,6 +101,17 @@ export function FavoritesPage(): JSX.Element {
       left: '@group:nav',
       right: null,
       up: 'fav-filter-' + activeCategory,
+      down: totalPages > 1 ? '@group:fav-pager' : null,
+    },
+    enterTo: 'first',
+  });
+
+  useFocusGroup('fav-pager', {
+    layout: 'horizontal',
+    exits: {
+      left: '@group:nav',
+      right: null,
+      up: pageItems.length > 0 ? 'fav-open-' + pageItems[pageItems.length - 1].id : null,
       down: null,
     },
     enterTo: 'first',
@@ -98,7 +124,7 @@ export function FavoritesPage(): JSX.Element {
     if (!focus.focusFirst(targets)) {
       focus.queueFocus(targets);
     }
-  }, [filtered, activeCategory, focus]);
+  }, [pageItems, activeCategory, page, focus]);
 
   const handleSelectFilter = (nextCat: FilterKey) => {
     const nextList =
@@ -117,12 +143,13 @@ export function FavoritesPage(): JSX.Element {
       'fav-filter-' + nextCat,
       nextList.length > 0 ? 'fav-open-' + nextList[0].id : 'fav-empty-action',
     ];
-    updateState({ category: nextCat });
+    updateState({ category: nextCat, page: 1 });
   };
 
-  const handleRemove = (index: number, id: string) => {
-    const nextItem = index + 1 < filtered.length ? filtered[index + 1] : null;
-    const prevItem = index - 1 >= 0 ? filtered[index - 1] : null;
+  const handleRemove = (indexInPage: number, id: string) => {
+    const globalIdx = (page - 1) * FAVORITES_PAGE_SIZE + indexInPage;
+    const nextItem = globalIdx + 1 < filtered.length ? filtered[globalIdx + 1] : null;
+    const prevItem = globalIdx - 1 >= 0 ? filtered[globalIdx - 1] : null;
     const targets: string[] = [];
     if (nextItem) {
       targets.push('fav-open-' + nextItem.id);
@@ -136,15 +163,35 @@ export function FavoritesPage(): JSX.Element {
     removeFavorite(id);
   };
 
+  const changePage = (nextPage: number, preferredButton: string) => {
+    if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
+    const nextStart = (nextPage - 1) * FAVORITES_PAGE_SIZE;
+    const firstOnNext = filtered[nextStart];
+    const canStayOnButton =
+      (preferredButton === 'fav-prev' && nextPage > 1) ||
+      (preferredButton === 'fav-next' && nextPage < totalPages);
+    const otherButton = preferredButton === 'fav-prev' ? 'fav-next' : 'fav-prev';
+    pendingFocusRef.current = canStayOnButton
+      ? [preferredButton, otherButton, firstOnNext ? 'fav-open-' + firstOnNext.id : '']
+      : [otherButton, firstOnNext ? 'fav-open-' + firstOnNext.id : ''];
+    focus.forget('favorites');
+    updateState({ page: nextPage });
+  };
+
   return (
     <section className="page-section favorites-page" aria-label="我的收藏">
       <div className="page-top-bar">
         <div>
           <h2 className="section-title">我的收藏</h2>
           <p className="section-subtitle">
-            共收藏 {allFavorites.length} 句老话 · 按分类筛选即可用遥控器快速查找
+            共收藏 {allFavorites.length} 句老话 · 按分类筛选即可快速查找
           </p>
         </div>
+        {totalPages > 1 ? (
+          <div className="page-indicator" data-testid="favorites-page-indicator">
+            第 {page} / {totalPages} 页
+          </div>
+        ) : null}
       </div>
 
       {/* 分类筛选栏 */}
@@ -155,7 +202,7 @@ export function FavoritesPage(): JSX.Element {
           const nextId =
             idx < FILTER_OPTIONS.length - 1 ? FILTER_OPTIONS[idx + 1].focusId : null;
           const downTarget =
-            filtered.length > 0 ? 'fav-open-' + filtered[0].id : 'fav-empty-action';
+            pageItems.length > 0 ? 'fav-open-' + pageItems[0].id : 'fav-empty-action';
           return (
             <FocusButton
               key={opt.key}
@@ -178,7 +225,7 @@ export function FavoritesPage(): JSX.Element {
       </div>
 
       {/* 列表或空状态 */}
-      {filtered.length === 0 ? (
+      {pageItems.length === 0 ? (
         <div className="empty-card" data-testid="favorites-empty">
           <h3 className="empty-title">
             {allFavorites.length === 0
@@ -212,69 +259,123 @@ export function FavoritesPage(): JSX.Element {
           </FocusButton>
         </div>
       ) : (
-        <ul className="fav-card-list" data-testid="favorites-list">
-          {filtered.map((item, idx) => {
-            const openId = 'fav-open-' + item.id;
-            const removeId = 'fav-remove-' + item.id;
-            const upOpen =
-              idx > 0
-                ? 'fav-open-' + filtered[idx - 1].id
-                : 'fav-filter-' + activeCategory;
-            const downOpen =
-              idx < filtered.length - 1 ? 'fav-open-' + filtered[idx + 1].id : null;
-            const upRemove =
-              idx > 0
-                ? 'fav-remove-' + filtered[idx - 1].id
-                : 'fav-filter-' + activeCategory;
-            const downRemove =
-              idx < filtered.length - 1 ? 'fav-remove-' + filtered[idx + 1].id : null;
+        <>
+          <ul className="fav-card-list" data-testid="favorites-list">
+            {pageItems.map((item, idx) => {
+              const openId = 'fav-open-' + item.id;
+              const removeId = 'fav-remove-' + item.id;
+              const upOpen =
+                idx > 0
+                  ? 'fav-open-' + pageItems[idx - 1].id
+                  : 'fav-filter-' + activeCategory;
+              const downOpen =
+                idx < pageItems.length - 1
+                  ? 'fav-open-' + pageItems[idx + 1].id
+                  : totalPages > 1
+                    ? page > 1
+                      ? 'fav-prev'
+                      : 'fav-next'
+                    : null;
+              const upRemove =
+                idx > 0
+                  ? 'fav-remove-' + pageItems[idx - 1].id
+                  : 'fav-filter-' + activeCategory;
+              const downRemove =
+                idx < pageItems.length - 1
+                  ? 'fav-remove-' + pageItems[idx + 1].id
+                  : totalPages > 1
+                    ? page > 1
+                      ? 'fav-prev'
+                      : 'fav-next'
+                    : null;
 
-            return (
-              <li
-                key={item.id}
-                className="fav-card-row"
-                data-testid={'fav-item-' + item.id}
+              return (
+                <li
+                  key={item.id}
+                  className="fav-card-row"
+                  data-testid={'fav-item-' + item.id}
+                >
+                  <FocusButton
+                    focusId={openId}
+                    group="fav-list"
+                    variant="card"
+                    onPress={() => push({ name: 'detail', id: item.id })}
+                    nav={{
+                      left: '@group:nav',
+                      right: removeId,
+                      up: upOpen,
+                      down: downOpen,
+                    }}
+                  >
+                    <div className="card-row-header">
+                      <span className="card-row-title">{item.text}</span>
+                      <span className="category-badge">
+                        {categoryLabel(item.category)}
+                      </span>
+                    </div>
+                    <p className="card-row-desc">{item.plainExplanation}</p>
+                  </FocusButton>
+
+                  <FocusButton
+                    focusId={removeId}
+                    group="fav-list"
+                    variant="ghost"
+                    ariaLabel={'取消收藏 ' + item.text}
+                    onPress={() => handleRemove(idx, item.id)}
+                    nav={{
+                      left: openId,
+                      right: null,
+                      up: upRemove,
+                      down: downRemove,
+                    }}
+                  >
+                    取消收藏
+                  </FocusButton>
+                </li>
+              );
+            })}
+          </ul>
+
+          {totalPages > 1 ? (
+            <div className="pager-bar" role="navigation" aria-label="收藏分页">
+              <FocusButton
+                focusId="fav-prev"
+                group="fav-pager"
+                variant="default"
+                disabled={page <= 1}
+                onPress={() => changePage(page - 1, 'fav-prev')}
+                nav={{
+                  left: '@group:nav',
+                  right: page < totalPages ? 'fav-next' : null,
+                  up: 'fav-open-' + pageItems[pageItems.length - 1].id,
+                  down: null,
+                }}
               >
-                <FocusButton
-                  focusId={openId}
-                  group="fav-list"
-                  variant="card"
-                  onPress={() => push({ name: 'detail', id: item.id })}
-                  nav={{
-                    left: '@group:nav',
-                    right: removeId,
-                    up: upOpen,
-                    down: downOpen,
-                  }}
-                >
-                  <div className="card-row-header">
-                    <span className="card-row-title">{item.text}</span>
-                    <span className="category-badge">
-                      {categoryLabel(item.category)}
-                    </span>
-                  </div>
-                  <p className="card-row-desc">{item.plainExplanation}</p>
-                </FocusButton>
+                ← 上一页
+              </FocusButton>
 
-                <FocusButton
-                  focusId={removeId}
-                  group="fav-list"
-                  variant="ghost"
-                  ariaLabel={'取消收藏 ' + item.text}
-                  onPress={() => handleRemove(idx, item.id)}
-                  nav={{
-                    left: openId,
-                    right: null,
-                    up: upRemove,
-                    down: downRemove,
-                  }}
-                >
-                  取消收藏
-                </FocusButton>
-              </li>
-            );
-          })}
-        </ul>
+              <span className="pager-status" data-testid="fav-pager-status">
+                第 {page} 页，共 {totalPages} 页
+              </span>
+
+              <FocusButton
+                focusId="fav-next"
+                group="fav-pager"
+                variant="default"
+                disabled={page >= totalPages}
+                onPress={() => changePage(page + 1, 'fav-next')}
+                nav={{
+                  left: page > 1 ? 'fav-prev' : '@group:nav',
+                  right: null,
+                  up: 'fav-open-' + pageItems[pageItems.length - 1].id,
+                  down: null,
+                }}
+              >
+                下一页 →
+              </FocusButton>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

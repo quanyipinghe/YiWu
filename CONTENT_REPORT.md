@@ -1,0 +1,132 @@
+# 「一日一悟」(YiWu) 内容库与视觉系统扩充报告
+
+> 生成说明：本报告如实记录「一日一悟」项目增量升级后的完整内容库规模、分类分布、主题覆盖、视觉场景系统配置、出处核实状态及数据校验规则。
+
+---
+
+## 一、内容库规模与文件结构
+
+- **内容总数**：**303 条**（超越目标 300 条）。
+- **原有历史条目保留情况**：**33 / 33 条历史 ID 100% 原样保留**，收藏（`favorites`）、浏览足迹（`history`）与本轮已抽取记录（`round`）在 `localStorage`（`yiwu:v1:data`）中无缝兼容，不会因升级导致数据丢失或失效。
+- **按类别与批次模块化拆分结构**：
+  - 统一汇总入口：[src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts)
+  - 历史保留批次（33 条）：[src/data/batches/legacyProverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/legacyProverbs.ts)
+  - 第一批 · 俗语扩充（47 条）：[src/data/batches/batch1-suyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch1-suyu.ts)
+  - 第二批 · 成语扩充（54 条）：[src/data/batches/batch2-chengyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch2-chengyu.ts)
+  - 第三批 · 惯用语扩充（41 条）：[src/data/batches/batch3-guanyongyu.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch3-guanyongyu.ts)
+  - 第四批 · 格言扩充（42 条）：[src/data/batches/batch4-geyan.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch4-geyan.ts)
+  - 第五批 · 箴言扩充（44 条）：[src/data/batches/batch5-zhenyan.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch5-zhenyan.ts)
+  - 第六批 · 警句扩充（42 条）：[src/data/batches/batch6-jingju.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/batches/batch6-jingju.ts)
+
+---
+
+## 二、分类分布统计（6 大类型）
+
+| 主要类型 (`category`) | 中文名称 | 条目数量 | 占比 |
+| --- | --- | ---: | ---: |
+| `chengyu` | 成语 | 64 条 | 21.1% |
+| `suyu` | 俗语 | 56 条 | 18.5% |
+| `zhenyan` | 箴言 | 47 条 | 15.5% |
+| `geyan` | 格言 | 46 条 | 15.2% |
+| `guanyongyu` | 惯用语 | 45 条 | 14.9% |
+| `jingju` | 警句 | 45 条 | 14.9% |
+| **合计** | **全部类型** | **303 条** | **100.0%** |
+
+---
+
+## 三、主题覆盖分布（15 大主题）
+
+通过主标签与辅助标签交叉标注，覆盖日常认知、人际与行动的 15 个核心主题：
+
+| 主题领域 | 覆盖条目数 | 代表条目示例 |
+| --- | ---: | --- |
+| 做事与执行 | 65 条 | 磨刀不误砍柴工、眼高手低、快刀斩乱麻 |
+| 谨慎与风险 | 51 条 | 小洞不补，大洞吃苦、吃一堑，长一智、居安思危 |
+| 判断与偏见 | 47 条 | 兼听则明，偏信则暗、耳听为虚，眼见为实、盲人摸象 |
+| 学习与积累 | 39 条 | 滴水穿石，非一日之功、千里之行，始于足下、温故而知新 |
+| 人际关系 | 36 条 | 远亲不如近邻、己所不欲，勿施于人、留得青山在 |
+| 时间与耐心 | 35 条 | 慢工出细活、欲速则不达、十年树木，百年树人 |
+| 沟通与表达 | 29 条 | 良言一句三冬暖，恶语伤人六月寒、打开天窗说亮话 |
+| 自省与成长 | 28 条 | 吾日三省吾身、闻过则喜、见贤思齐 |
+| 工作与职业 | 23 条 | 熟能生巧、业精于勤，荒于嬉、在其位谋其政 |
+| 得失与取舍 | 22 条 | 塞翁失马，焉知非福、有所不为而后可以有为 |
+| 诚信与责任 | 22 条 | 一言既出，驷马难追、言必信，行必果 |
+| 合作与分工 | 20 条 | 三个臭皮匠，顶个诸葛亮、人心齐，泰山移、孤掌难鸣 |
+| 消费与欲望 | 20 条 | 吃不穷，穿不穷，算计不到就受穷、由俭入奢易，由奢入俭难 |
+| 情绪与心态 | 20 条 | 心急吃不了热豆腐、宠辱不惊、船到桥头自然直 |
+| 家庭与生活 | 18 条 | 家和万事兴、一粥一饭，当思来处不易 |
+
+---
+
+## 四、视觉场景与故事结构统计
+
+### 1. 故事呈现结构（可辨识联合类型 `StoryStructure`）
+
+| 结构类型 (`kind`) | 中文说明 | 条目数量 |
+| --- | --- | ---: |
+| `four-panel` | 四格故事（起因 → 选择 → 结果 → 点题） | 287 条 |
+| `contrast` | 前后对照（同一处境下两种做法与不同结果对照） | 7 条 |
+| `timeline` | 时间推进（跨越阶段或季节的积累与变化过程） | 5 条 |
+| `branch` | 选择分支（一个共同处境与两条不同路径推演） | 4 条 |
+
+### 2. 18 种可复用 SVG 视觉背景分布（共 1,212 个画格）
+
+| 场景标识 (`SceneKind`) | 中文场景名称 | 所属生活领域 | 使用画格数 |
+| --- | --- | --- | ---: |
+| `workshop` | 工坊 / 修理台 | 手工与修理 | 145 格 |
+| `study` | 书房 / 书桌 | 家庭 / 学习 | 145 格 |
+| `kitchen` | 厨房 / 餐桌 | 家庭与饮食 | 95 格 |
+| `courtyard` | 庭院 / 社区 | 社区与邻里 | 95 格 |
+| `orchard` | 田地 / 果园 | 田野与农作 | 88 格 |
+| `mountain` | 山路 | 旅途与自然 | 83 格 |
+| `living` | 客厅 | 家庭生活 | 79 格 |
+| `office` | 办公室 | 职场与团队 | 75 格 |
+| `market` | 商店 / 市场 | 商店与消费 | 73 格 |
+| `bridge` | 河边 / 小桥 | 公共生活 / 寓意 | 65 格 |
+| `rain` | 风雨归途 | 旅途 / 风险防范 | 63 格 |
+| `road` | 街道 / 岔路 | 旅途 / 选择 | 49 格 |
+| `classroom` | 教室 / 自习室 | 校园生活 | 36 格 |
+| `station` | 车站 / 站台 | 旅途出行 | 32 格 |
+| `community` | 社区公告栏 | 社区与公共生活 | 31 格 |
+| `digital` | 网络生活 | 数字与网络沟通 | 26 格 |
+| `river` | 河岸步道 | 自然与调解 | 23 格 |
+| `abstract` | 抽象寓意场景 | 哲思与自省 | 9 格 |
+
+- **单一场景最高占比**：`11.96%`（远低于 `30%` 的集中度警戒线）。
+- **视觉连续性保证**：同一故事四格保持同一主角（`CharacterId`）与核心道具（`PropKind`）连续，人物姿态（`thinking` → `acting` → `discovering` → `relieved` 等）与叙事标记（`arrow`、`highlight`、`compare`、`fork`、`time`、`zoom`、`bubble`）随情节递进变化。
+
+---
+
+## 五、出处核实状态统计（严禁伪造典籍）
+
+| 出处状态 (`sourceStatus`) | 含义说明 | 条目数量 | 占比 |
+| --- | --- | ---: | ---: |
+| `classical` | 明确传世典籍或名篇出处（注明书名与篇名，如《论语》《孟子》《荀子》《老子》《战国策》等） | 149 条 | 49.2% |
+| `folk` | 民间流传熟语、谚语、惯用语，或近代通俗化改编表述（明确标注“民间流传，具体出处未核实”） | 150 条 | 49.5% |
+| `unverified` | 常见格言箴言但原始出处存在多说或暂难孤证（明确标注“具体文献出处待核实”） | 4 条 | 1.3% |
+
+> **说明**：所有现代生活故事均在数据模型（`storyFictionNote`）与详情页 UI 中显式标注为「**虚构生活情境**」，所有寓意视觉画面显式标注为「**现代视觉寓意**」，绝不伪装成古籍原典故事。
+
+---
+
+## 六、自动化校验与核验说明
+
+可通过以下命令随时运行内容校验脚本 [scripts/validate-content.mjs](file:///Users/quanyipinghe/Documents/AI/family/YiWu/scripts/validate-content.mjs)：
+
+```bash
+npm run check:content
+```
+
+校验脚本覆盖 10 大维度：
+1. 33 条历史 ID 完整性保护（防止破坏用户本地收藏与足迹）。
+2. 全局 `id` 与原句 `text` 唯一性检查。
+3. 必填字段与字数合理性检查。
+4. 故事画格数量、叙事节拍（`cause / action / result / point`）及多布局分支结构完整性检查。
+5. 场景、角色、姿态、道具、叙事标记与 `sceneCatalog` 的合法性及人物连续性检查。
+6. 禁止套话扫描（拦截“这告诉我们”、“生活中也是如此”、“要结合实际情况使用”、“你有什么感悟”等空洞套话）。
+7. 四格故事画面与正文完全雷同去重检查。
+8. 深入解释与适用边界前缀指纹查重。
+9. `relatedIds` 与 `contrastIds` 真实存在性及防自关联校验。
+10. 单一场景集中度与 15 大主题覆盖度校验。
+
+> **边界声明**：`npm run check:content` 仅验证数据结构、文本质量规则与引用完整性，不等同于古籍文献版本学的人工逐字校勘。

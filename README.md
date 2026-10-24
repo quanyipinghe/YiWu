@@ -36,16 +36,19 @@ npm run dev
 # 3. 执行 TypeScript 类型检查
 npm run typecheck
 
-# 4. 执行自动化单元测试与遥控器全流程集成测试
+# 4. 执行内容库数据校验与统计报告（303 条内容、唯一性、视觉连续性与关联引用检查）
+npm run check:content
+
+# 5. 执行自动化单元测试与遥控器全流程集成测试
 npm test
 
-# 5. 构建生产静态包并执行 Chrome 66 产物兼容检查（tsc + vite build + check-compat）
+# 6. 构建生产静态包并执行 Chrome 66 产物兼容检查（tsc + vite build + check-compat）
 npm run build
 
-# 6. 预览生产构建（默认监听 0.0.0.0:4173）
+# 7. 预览生产构建（默认监听 0.0.0.0:4173）
 npm run preview
 
-# 7. 运行基于本机 Chrome CDP 的生产包 HTTP 端到端校验（可选）
+# 8. 运行基于本机 Chrome CDP 的生产包 HTTP 端到端校验（可选）
 npm run e2e
 ```
 
@@ -78,15 +81,22 @@ server {
 
 ---
 
-## 三、TV 模式与普通模式切换方式
+## 三、多端适配（自动模式 / TV 远距模式 / 普通浏览模式）
 
-应用默认启用 **TV 远距模式**（大字号、4%～5% 电视安全留白、焦点看门狗防丢失），绝不仅凭 `User-Agent` 猜测设备。提供以下切换方式：
+应用同时适配 **Android TV 遥控器**、**PC 桌面浏览器（鼠标 + 键盘）** 与 **手机竖屏浏览器（触屏）**，共享同一套内容与本地存储逻辑，按模式提供最合适的布局与交互。
 
+### 1. 模式优先级
+**显式 URL 参数 (`?tv=1` / `?tv=0` / `?mode=tv|normal|auto`) > 用户在「设置」中手动保存的选择 > 自动判断（Auto）**。
+
+- **自动判断策略**：检查 WebView/TV 特征 UA 以及输入能力媒体查询（`pointer: fine` + `hover: hover` 识别为桌面普通模式；触屏手机识别为移动端普通模式；无精细指针且无悬停的电视环境识别为 TV 模式），绝不仅凭屏幕宽度将大屏 PC 误判为电视。
+
+### 2. 切换方式
 1. **应用内切换（持久化保存）**：
-   - 进入左侧导航 **「设置」** → 在「显示与交互模式」中选择 **「TV 远距模式」** 或 **「普通浏览模式」**。选择结果保存在本地 `localStorage`。
+   - 进入导航 **「设置」** → 在「显示与交互模式」中选择 **「自动判断」**、**「TV 远距模式」** 或 **「普通浏览模式」**。选择结果保存在本地 `localStorage`。
 2. **URL 查询参数临时覆盖（不覆盖已保存的本地设置）**：
-   - 强制启用 TV 模式：`?tv=1` 或 `?tv=true`
-   - 强制启用普通模式（适合手机/桌面直接分享链接）：`?tv=0` 或 `?tv=false`
+   - 强制启用 TV 模式：`?tv=1`、`?tv=true` 或 `?mode=tv`
+   - 强制启用普通模式（适合手机/桌面直接打开）：`?tv=0`、`?tv=false` 或 `?mode=normal`
+   - 强制使用自动判断：`?mode=auto`
    - 开启开发调试面板入口：`?debug=1`
 
 ---
@@ -170,18 +180,25 @@ override fun onBackPressed() {
 
 ---
 
-## 七、添加新内容的方法
+## 七、内容库架构、画面系统与添加新内容的方法
 
-所有内容数据保存在 [src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts)，类型定义在 [src/data/types.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/types.ts)。
+项目内置 **303 条** 高质量完整内容（详情见 [CONTENT_REPORT.md](file:///Users/quanyipinghe/Documents/AI/family/YiWu/CONTENT_REPORT.md)），按批次拆分在 `src/data/batches/` 下，由 [src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts) 统一汇总，类型定义在 [src/data/types.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/types.ts)，视觉素材目录定义在 [src/data/sceneCatalog.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/sceneCatalog.ts)。
 
-添加新条目步骤：
-1. 打开 [src/data/proverbs.ts](file:///Users/quanyipinghe/Documents/AI/family/YiWu/src/data/proverbs.ts)，在 `PROVERBS` 数组中新增一个遵循 `Proverb` 接口的对象：
-   - `id`：使用稳定且唯一的小写拼音短横线标识（如 `'qian-li-zhi-xing'`），**切勿使用数字下标**。
+### 1. 可复用 SVG 故事画面系统
+- **18 种场景背景 (`SceneKind`)**：客厅 (`living`)、厨房/餐桌 (`kitchen`)、书房 (`study`)、教室 (`classroom`)、办公室 (`office`)、商店/市场 (`market`)、街道 (`road`)、车站 (`station`)、庭院 (`courtyard`)、社区 (`community`)、田地/果园 (`orchard`)、山路 (`mountain`)、河边 (`river`)、小桥 (`bridge`)、风雨归途 (`rain`)、工坊/修理台 (`workshop`)、网络生活 (`digital`)、抽象寓意 (`abstract`)。
+- **8 位可复用角色 (`CharacterId`) × 8 种动作姿态 (`CharacterPose`)**：支持思考、交谈、行动、犹豫、发现、释然、专注、倾听等姿态，同一故事四格保持主角与服饰一致。
+- **25 种道具 (`PropKind`) 与 7 种叙事标记 (`NarrativeKind`)**：支持路径箭头、关键物高亮、前后对照、分岔选择、时间变化、局部放大、简短气泡。
+- **4 种故事呈现结构 (`StoryStructure`)**：四格故事 (`four-panel`)、前后对照 (`contrast`)、选择分支 (`branch`)、时间推进 (`timeline`)。
+
+### 2. 添加新条目与校验步骤
+1. 在 `src/data/batches/` 对应类别的批次文件中新增遵循 `Proverb` 接口的条目：
+   - `id`：使用稳定且唯一的小写拼音短横线标识（如 `'qian-li-zhi-xing'`），**切勿修改已有 33 条历史 ID，切勿使用数字下标**。
    - `category`：主要类型（`'suyu' | 'chengyu' | 'guanyongyu' | 'geyan' | 'zhenyan' | 'jingju'`）。
-   - `tags`：2～3 个辅助标签。
-   - `story`：固定 4 格生活故事数组，`beat` 依次为 `'cause'`（起因）、`'action'`（选择）、`'result'`（结果）、`'point'`（点题），`scene` 从 12 种内置 SVG 场景中选择。
+   - `tags`：2～4 个主题与场景辅助标签。
+   - `story`：固定 4 格生活故事数组，`beat` 依次为 `'cause'`（起因）、`'action'`（选择）、`'result'`（结果）、`'point'`（点题），并为每格配置 `visual`（场景、角色与姿态、道具、叙事元素）。
+   - 可选配置 `storyStructure`（`four-panel` / `contrast` / `branch` / `timeline`）及反思对照字段（`commonMisreading`、`modernApplication`、`relatedIds`、`contrastIds`、`contrastNote`）。
    - `source` 与 `sourceStatus`：有明确典籍出处的填 `'classical'` 并注明篇名；民间熟语填 `'folk'`（「民间流传，具体出处未核实」）；待考证填 `'unverified'`，**严禁编造古籍原文或作者**。
-2. 运行 `npm test`（`src/test/draw.test.ts` 会自动校验所有条目的 ID 唯一性、四格故事结构与字段长度）。
+2. 运行 `npm run check:content` 与 `npm test`，自动校验所有条目的 ID 唯一性、33 条历史 ID 保留、四格故事结构、关联 ID 有效性、套话拦截与视觉连续性。
 
 ---
 

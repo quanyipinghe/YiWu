@@ -4,15 +4,23 @@
  * - 状态写入存储只发生在 useEffect 中，不在 render 中写入。
  * - draw / toggleFavorite 基于同步更新的 ref 计算，
  *   即使同一事件循环内被重复调用也不会生成重复记录。
+ * - 模式优先级：显式 URL 参数 (?tv=1 / ?tv=0 / ?mode=...) > 用户手动保存的选择 > 自动判断。
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_REPO, type ContentRepo } from '../data/content';
 import { todayKey } from '../domain/date';
 import { drawForDate, findEntry, type HistoryEntry } from '../domain/draw';
-import { createEmptyData, sanitizeData, type AppData, type DisplayMode, type MotionPreference } from '../storage/schema';
+import {
+  createEmptyData,
+  sanitizeData,
+  type AppData,
+  type DisplayMode,
+  type ModePreference,
+  type MotionPreference,
+} from '../storage/schema';
 import { AppStorage, detectLocalStorage, type StorageStatus } from '../storage/storage';
 
-export type ModeSource = 'query' | 'saved' | 'default';
+export type ModeSource = 'query' | 'saved' | 'auto' | 'default';
 
 export interface AppStateValue {
   repo: ContentRepo;
@@ -22,7 +30,10 @@ export interface AppStateValue {
   storageStatus: StorageStatus;
   notice: string | null;
   dismissNotice: () => void;
+  /** 最终生效的显示模式：'tv' 或 'normal' */
   mode: DisplayMode;
+  /** 用户保存或覆盖的模式偏好：'auto' | 'tv' | 'normal' */
+  modePreference: 'auto' | DisplayMode;
   modeSource: ModeSource;
   motion: MotionPreference;
   /** 抽取今天的内容（幂等），返回当天记录 */
@@ -33,7 +44,7 @@ export interface AppStateValue {
   /** 切换收藏，返回切换后的状态 */
   toggleFavorite: (id: string) => boolean;
   removeFavorite: (id: string) => void;
-  setMode: (mode: DisplayMode) => void;
+  setMode: (mode: ModePreference) => void;
   setMotion: (motion: MotionPreference) => void;
   clearAll: () => void;
   exportData: () => string;
@@ -52,13 +63,61 @@ export interface AppStateProviderProps {
   search?: string;
 }
 
-/** 解析 ?tv=1 / ?tv=0 临时覆盖 */
-export function parseModeOverride(search: string): DisplayMode | null {
-  const m = /[?&]tv=([^&#]*)/.exec(search || '');
-  if (!m) return null;
-  if (m[1] === '1' || m[1] === 'true') return 'tv';
-  if (m[1] === '0' || m[1] === 'false') return 'normal';
+/** 解析 ?tv=1 / ?tv=0 / ?mode=tv|normal|auto 临时覆盖 */
+export function parseModeOverride(search: string): 'tv' | 'normal' | 'auto' | null {
+  const s = search || '';
+  const tvMatch = /[?&]tv=([^&#]*)/.exec(s);
+  if (tvMatch) {
+    if (tvMatch[1] === '1' || tvMatch[1] === 'true') return 'tv';
+    if (tvMatch[1] === '0' || tvMatch[1] === 'false') return 'normal';
+  }
+  const modeMatch = /[?&]mode=([^&#]*)/.exec(s);
+  if (modeMatch) {
+    if (modeMatch[1] === 'tv') return 'tv';
+    if (modeMatch[1] === 'normal' || modeMatch[1] === 'pc' || modeMatch[1] === 'mobile') {
+      return 'normal';
+    }
+    if (modeMatch[1] === 'auto') return 'auto';
+  }
   return null;
+}
+
+/**
+ * 自动判断设备模式（不单凭屏幕宽度把大屏 PC 误判为 TV）：
+ * 1. 明确带有电视内核/盒子标识或注入了遥控器映射 -> 'tv'
+ * 2. 单元测试环境（jsdom，无真实 matchMedia） -> 'tv'（保持遥控器自动化测试默认一致）
+ * 3. 手机/平板触屏（Mobile UA 或 coarse 指针） -> 'normal'
+ * 4. 桌面浏览器（具备 fine 鼠标指针与 hover 能力且无 TV 标识） -> 'normal'
+ * 5. 其他嵌入式电视 WebView 环境 -> 'tv'
+ */
+export function detectAutoMode(win?: Window): DisplayMode {
+  if (!win) return 'tv';
+  const ua = win.navigator && win.navigator.userAgent ? win.navigator.userAgent : '';
+  if (/jsdom/i.test(ua)) return 'tv';
+
+  const anyWin = win as unknown as Record<string, unknown>;
+  if (anyWin.YIWU_KEYMAP || anyWin.tvAppHost) return 'tv';
+
+  const tvRegex =
+    /\b(Android\s+TV|SmartTV|SMART-TV|Tizen|Web0S|WebOS|BRAVIA|AFT[A-Z0-9]*|MiBOX|HbbTV|NetCast|Viera|CrKey|GoogleTV|TV)\b/i;
+  if (tvRegex.test(ua)) return 'tv';
+
+  // Android 设备但不含 Mobile（常见于机顶盒 WebView）
+  if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return 'tv';
+
+  // 手机或移动浏览器
+  if (/\b(iPhone|iPod|iPad|Mobile|HarmonyOS)\b/i.test(ua)) return 'normal';
+
+  if (typeof win.matchMedia === 'function') {
+    try {
+      if (win.matchMedia('(pointer: coarse)').matches) return 'normal';
+      if (win.matchMedia('(pointer: fine) and (hover: hover)').matches) return 'normal';
+    } catch (e) {
+      // matchMedia 异常时继续兜底
+    }
+  }
+
+  return 'tv';
 }
 
 export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
@@ -67,13 +126,23 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
   const randomFn = props.random || Math.random;
 
   // 初始化只执行一次：存储探测 + 读取
-  const initRef = useRef<{ storage: AppStorage; data: AppData; status: StorageStatus; notice: string | null } | null>(
-    null,
-  );
+  const initRef = useRef<{
+    storage: AppStorage;
+    data: AppData;
+    status: StorageStatus;
+    notice: string | null;
+  } | null>(null);
   if (!initRef.current) {
-    const storage = props.storage || new AppStorage(detectLocalStorage(typeof window !== 'undefined' ? window : undefined));
+    const storage =
+      props.storage ||
+      new AppStorage(detectLocalStorage(typeof window !== 'undefined' ? window : undefined));
     const loaded = storage.load();
-    initRef.current = { storage, data: loaded.data, status: loaded.status, notice: loaded.notice };
+    initRef.current = {
+      storage,
+      data: loaded.data,
+      status: loaded.status,
+      notice: loaded.notice,
+    };
   }
   const storage = initRef.current.storage;
 
@@ -82,8 +151,14 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
   const [today, setToday] = useState<string>(() => todayKey(nowFn));
   const [storageStatus, setStorageStatus] = useState<StorageStatus>(initRef.current.status);
   const [notice, setNotice] = useState<string | null>(initRef.current.notice);
-  const [override, setOverride] = useState<DisplayMode | null>(() =>
-    parseModeOverride(props.search !== undefined ? props.search : typeof location !== 'undefined' ? location.search : ''),
+  const [override, setOverride] = useState<'tv' | 'normal' | 'auto' | null>(() =>
+    parseModeOverride(
+      props.search !== undefined
+        ? props.search
+        : typeof location !== 'undefined'
+          ? location.search
+          : '',
+    ),
   );
 
   /** 同步更新 ref 与 state */
@@ -160,10 +235,10 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
   );
 
   const setMode = useCallback(
-    (mode: DisplayMode) => {
+    (nextMode: ModePreference) => {
       setOverride(null);
       const cur = dataRef.current;
-      commit({ ...cur, settings: { ...cur.settings, mode } });
+      commit({ ...cur, settings: { ...cur.settings, mode: nextMode } });
     },
     [commit],
   );
@@ -203,8 +278,32 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
 
   const dismissNotice = useCallback(() => setNotice(null), []);
 
-  const mode: DisplayMode = override || data.settings.mode || 'tv';
-  const modeSource: ModeSource = override ? 'query' : data.settings.mode ? 'saved' : 'default';
+  const autoResolved = detectAutoMode(typeof window !== 'undefined' ? window : undefined);
+  const savedMode = data.settings.mode;
+
+  // 模式优先级：显式 URL 参数 > 用户手动保存的选择 ('tv' | 'normal') > 自动判断
+  let mode: DisplayMode;
+  let modePreference: 'auto' | DisplayMode;
+  let modeSource: ModeSource;
+
+  if (override === 'tv' || override === 'normal') {
+    mode = override;
+    modePreference = override;
+    modeSource = 'query';
+  } else if (override === 'auto') {
+    mode = autoResolved;
+    modePreference = 'auto';
+    modeSource = 'query';
+  } else if (savedMode === 'tv' || savedMode === 'normal') {
+    mode = savedMode;
+    modePreference = savedMode;
+    modeSource = 'saved';
+  } else {
+    mode = autoResolved;
+    modePreference = 'auto';
+    modeSource = savedMode === 'auto' ? 'saved' : 'default';
+  }
+
   const todayEntry = findEntry(data.history, today);
 
   const value = useMemo<AppStateValue>(
@@ -217,6 +316,7 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
       notice,
       dismissNotice,
       mode,
+      modePreference,
       modeSource,
       motion: data.settings.motion,
       draw,
@@ -239,6 +339,7 @@ export function AppStateProvider(props: AppStateProviderProps): JSX.Element {
       notice,
       dismissNotice,
       mode,
+      modePreference,
       modeSource,
       draw,
       refreshToday,

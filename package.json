@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:compat": "node scripts/check-compat.mjs",
+    "check:content": "node scripts/validate-content.mjs",
     "e2e": "node scripts/e2e-cdp.mjs"
   },
   "dependencies": {

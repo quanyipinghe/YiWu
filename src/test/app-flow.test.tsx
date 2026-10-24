@@ -300,15 +300,31 @@ describe('全流程遥控器操作闭环 (App Integration)', () => {
     seed.favorites = [{ id: 'wang-yang-bu-lao', addedAt: 1000 }]; // 成语
     storage.save(seed);
 
+    // 1. 先验证 ?tv=0 显式参数覆盖为普通模式（普通模式下不强制抢夺焦点）
     renderApp({
       storage,
       initialRoute: 'favorites',
       search: '?tv=0',
       showDebugEntry: true,
     });
-
-    // 验证 ?tv=0 临时覆盖为普通模式
     expect(document.querySelector('.app-shell')?.getAttribute('data-mode')).toBe('normal');
+    expect(activeFocusId()).toBeNull();
+    act(() => {
+      root?.unmount();
+    });
+    container?.remove();
+    root = null;
+    container = null;
+
+    // 2. 在 TV 模式（?tv=1）下测试遥控器方向键切换分类与开启 TV 调试面板
+    renderApp({
+      storage,
+      initialRoute: 'favorites',
+      search: '?tv=1',
+      showDebugEntry: true,
+    });
+
+    expect(document.querySelector('.app-shell')?.getAttribute('data-mode')).toBe('tv');
     expect(activeFocusId()).toBe('fav-open-wang-yang-bu-lao');
 
     // 向上移到「全部」筛选项，再向右移到「俗语」筛选项并按 Enter（该分类下无 wang-yang-bu-lao）
@@ -330,12 +346,11 @@ describe('全流程遥控器操作闭环 (App Integration)', () => {
     KEYS.down();
     expect(activeFocusId()).toBe('nav-settings');
     KEYS.enter();
-    expect(activeFocusId()).toBe('settings-mode-normal');
+    expect(activeFocusId()).toBe('settings-mode-tv');
 
     // 在设置页向下移动到「开启 TV 调试面板」按钮并按 Enter
     KEYS.down(); // settings-motion-reduced
     KEYS.down(); // settings-clear-data
-    KEYS.down(); // settings-export-btn (normal mode)
     KEYS.down(); // settings-toggle-debug
     expect(activeFocusId()).toBe('settings-toggle-debug');
     expect(document.querySelector('[data-testid="tv-debug-panel"]')).toBeNull();

@@ -11,7 +11,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useAppState } from '../app/AppState';
 import { useRouter } from '../app/router';
 import { categoryLabel } from '../data/content';
-import type { Proverb } from '../data/types';
+import type { ProverbSummary } from '../data/types';
 import { formatFullDate, formatWeekday } from '../domain/date';
 import { sortHistoryDesc, type HistoryEntry } from '../domain/draw';
 import { FocusButton } from '../tv/FocusButton';
@@ -21,7 +21,7 @@ export const HISTORY_PAGE_SIZE = 5;
 
 interface ResolvedHistoryItem {
   entry: HistoryEntry;
-  proverb: Proverb;
+  proverb: ProverbSummary;
   focusId: string;
 }
 
@@ -30,13 +30,13 @@ export function HistoryPage(): JSX.Element {
   const { current, push, updateState, navigateRoot } = useRouter();
   const { focus } = useTv();
 
-  // 按日期倒序排列并过滤掉未知内容 ID
+  // 按日期倒序排列并过滤掉未知内容 ID（仅读取轻量摘要）
   const items = useMemo<ResolvedHistoryItem[]>(() => {
     const sorted = sortHistoryDesc(data.history);
     const out: ResolvedHistoryItem[] = [];
     for (let i = 0; i < sorted.length; i++) {
       const entry = sorted[i];
-      const p = repo.get(entry.id);
+      const p = repo.getSummary(entry.id);
       if (p) {
         out.push({
           entry,

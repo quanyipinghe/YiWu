@@ -154,7 +154,7 @@ async function run() {
       mobile: false,
     });
 
-    await send('Page.navigate', { url: 'http://127.0.0.1:' + port + '/?debug=1' });
+    await send('Page.navigate', { url: 'http://127.0.0.1:' + port + '/?tv=1&debug=1' });
     await new Promise((r) => setTimeout(r, 350));
 
     // 1. 验证默认焦点与聚焦背景色
@@ -192,13 +192,16 @@ async function run() {
       throw new Error('进入详情页焦点异常: ' + JSON.stringify(inDetail));
     }
 
-    // 4. 在 960x540、1280x720、1920x1080、3840x2160、390x844 视口下检查无横向溢出
+    // 4. 在 360x800、390x844、768x1024、1366x768、1920x1080、960x540、1280x720、3840x2160 视口下检查无横向溢出
     const viewports = [
+      { width: 360, height: 800 },
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+      { width: 1366, height: 768 },
+      { width: 1920, height: 1080 },
       { width: 960, height: 540 },
       { width: 1280, height: 720 },
-      { width: 1920, height: 1080 },
       { width: 3840, height: 2160 },
-      { width: 390, height: 844 },
     ];
     for (const vp of viewports) {
       await send('Emulation.setDeviceMetricsOverride', {

@@ -12,7 +12,12 @@ import type { HistoryEntry, RoundState } from '../domain/draw';
 
 export const DATA_VERSION = 1;
 
+/** 实际生效的显示与交互模式 */
 export type DisplayMode = 'tv' | 'normal';
+
+/** 用户保存的模式偏好：null 或 'auto' 均代表自动判断模式 */
+export type ModePreference = DisplayMode | 'auto' | null;
+
 export type MotionPreference = 'full' | 'reduced';
 
 export interface FavoriteEntry {
@@ -21,8 +26,8 @@ export interface FavoriteEntry {
 }
 
 export interface Settings {
-  /** null 表示用户尚未选择（默认 TV 模式） */
-  mode: DisplayMode | null;
+  /** null 或 'auto' 表示自动判断模式；'tv' 固定 TV 模式；'normal' 固定普通模式 */
+  mode: ModePreference;
   motion: MotionPreference;
 }
 
@@ -109,8 +114,12 @@ function sanitizeRound(raw: unknown, history: HistoryEntry[]): RoundState {
 
 function sanitizeSettings(raw: unknown): Settings {
   const s = isObject(raw) ? raw : {};
+  let mode: ModePreference = null;
+  if (s.mode === 'tv' || s.mode === 'normal' || s.mode === 'auto') {
+    mode = s.mode;
+  }
   return {
-    mode: s.mode === 'tv' || s.mode === 'normal' ? s.mode : null,
+    mode,
     motion: s.motion === 'reduced' ? 'reduced' : 'full',
   };
 }

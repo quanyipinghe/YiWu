@@ -1,22 +1,25 @@
 /**
- * 详情页：分段阅读一句老话。
+ * 详情页：分段或双栏阅读一句老话。
  *
- * 三个阅读步骤（不在一屏内堆积全部长文）：
- * - 第一步（1/3）：原句 + 白话解释
- * - 第二步（2/3）：四格生活故事（起因、选择、结果、点题，明确标注「虚构生活情境」）
- * - 第三步（3/3）：深入解释 + 适用边界 + 思考问题 + 来源与核实状态
+ * 多端布局与交互：
+ * - TV 模式：严格三步分段展示（不在一屏内堆积全部长文）：
+ *   - 第一步（1/3）：原句 + 白话解释
+ *   - 第二步（2/3）：生活故事（支持四格、前后对照、选择分支、时间推进，标注「虚构生活情境」，支持上一格/下一格切换）
+ *   - 第三步（3/3）：深入解释 + 适用边界 + 常见误解 + 现代应用 + 思考问题 + 对照/相关老话 + 来源说明
+ * - 普通模式（PC / 手机）：
+ *   - PC 宽屏采用双栏布局（左侧主故事与释义，右侧深入解释、适用边界、对照反思与关联推荐）；
+ *   - 手机窄屏自动变为单列流式布局，无需受限于电视固定高度容器。
  *
  * 阅读滚动模式：
  * - 提供可聚焦的「阅读滚动模式」入口（detail-read-area）。
  * - 按确认（Enter）进入阅读滚动模式，上下方向键滚动正文容器。
- * - 按返回键（Esc/Back）或再次按确认点击可见的「结束阅读滚动模式」按钮退出，
- *   绝不形成无法退出的焦点陷阱。
+ * - 按返回键（Esc/Back）或再次按确认退出，绝不形成焦点陷阱。
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAppState } from '../app/AppState';
 import { useRouter } from '../app/router';
-import { BEAT_LABELS, categoryLabel, SOURCE_STATUS_LABELS } from '../data/content';
-import { SceneIllustration } from '../components/SceneIllustration';
+import { categoryLabel, SOURCE_STATUS_LABELS } from '../data/content';
+import { StoryViewer } from '../components/StoryViewer';
 import { FocusButton } from '../tv/FocusButton';
 import {
   useBackHandler,
@@ -33,19 +36,45 @@ export interface DetailPageProps {
 
 const STEP_TITLES = [
   '第一步：原句与白话解释',
-  '第二步：四格生活故事',
+  '第二步：生活故事与场景',
   '第三步：深入解释与适用边界',
 ];
 
 export function DetailPage(props: DetailPageProps): JSX.Element {
-  const { repo, isFavorite, toggleFavorite } = useAppState();
-  const { back } = useRouter();
+  const { repo, mode, isFavorite, toggleFavorite } = useAppState();
+  const { back, push } = useRouter();
   const { focus } = useTv();
 
   const proverb = repo.get(props.id);
   const [step, setStep] = useState<number>(0);
   const [readingMode, setReadingMode] = useState<boolean>(false);
   const articleRef = useRef<HTMLDivElement>(null);
+
+  const contrastItems = proverb ? repo.getContrast(proverb) : [];
+  const relatedItems = proverb ? repo.getRelated(proverb) : [];
+  const relationButtons: Array<{ id: string; focusId: string; label: string; kind: 'contrast' | 'related' }> = [];
+
+  for (let i = 0; i < contrastItems.length; i++) {
+    relationButtons.push({
+      id: contrastItems[i].id,
+      focusId: 'detail-contrast-' + contrastItems[i].id,
+      label: '对照：' + contrastItems[i].text,
+      kind: 'contrast',
+    });
+  }
+  for (let i = 0; i < relatedItems.length; i++) {
+    relationButtons.push({
+      id: relatedItems[i].id,
+      focusId: 'detail-related-' + relatedItems[i].id,
+      label: '相近：' + relatedItems[i].text,
+      kind: 'related',
+    });
+  }
+
+  const firstRelationFocusId =
+    (mode === 'normal' || step === 2) && relationButtons.length > 0
+      ? relationButtons[0].focusId
+      : null;
 
   // 同步阅读滚动模式状态给外层（用于底部提示与调试面板）
   useEffect(() => {
@@ -82,7 +111,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
       left: '@group:nav',
       right: null,
       up: '@group:detail-steps',
-      down: '@group:detail-actions',
+      down: step === 1 ? 'story-panel-prev' : '@group:detail-actions',
     },
     enterTo: 'first',
   });
@@ -93,6 +122,17 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
       left: '@group:nav',
       right: null,
       up: 'detail-read-area',
+      down: firstRelationFocusId,
+    },
+    enterTo: 'first',
+  });
+
+  useFocusGroup('detail-relations', {
+    layout: 'horizontal',
+    exits: {
+      left: '@group:nav',
+      right: null,
+      up: 'detail-back',
       down: null,
     },
     enterTo: 'first',
@@ -139,14 +179,16 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
       articleRef.current.scrollTop = 0;
     }
     setReadingMode(false);
-    if (step === 2 && focus.getActiveId() === 'detail-next') {
-      if (!focus.focus('detail-back')) {
-        focus.focus('detail-prev');
+    if (mode === 'tv') {
+      if (step === 2 && focus.getActiveId() === 'detail-next') {
+        if (!focus.focus('detail-back')) {
+          focus.focus('detail-prev');
+        }
+      } else if (step === 0 && focus.getActiveId() === 'detail-prev') {
+        focus.focus('detail-next');
       }
-    } else if (step === 0 && focus.getActiveId() === 'detail-prev') {
-      focus.focus('detail-next');
     }
-  }, [step, focus]);
+  }, [step, focus, mode]);
 
   if (!proverb) {
     return (
@@ -171,9 +213,15 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
   }
 
   const favored = isFavorite(proverb.id);
+  const showStep1 = mode === 'normal' || step === 0;
+  const showStep2 = mode === 'normal' || step === 1;
+  const showStep3 = mode === 'normal' || step === 2;
 
   return (
-    <section className="page-section detail-page" aria-label="读懂这句话">
+    <section
+      className={'page-section detail-page detail-mode-' + mode}
+      aria-label="读懂这句话"
+    >
       {/* 顶部步骤切换栏 */}
       <div className="detail-step-bar" role="tablist" aria-label="阅读步骤">
         <FocusButton
@@ -204,7 +252,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             down: 'detail-read-area',
           }}
         >
-          2. 四格生活故事
+          2. 故事与场景
         </FocusButton>
         <FocusButton
           focusId="detail-step-3"
@@ -238,7 +286,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             left: '@group:nav',
             right: null,
             up: 'detail-step-' + (step + 1),
-            down: step < 2 ? 'detail-next' : 'detail-back',
+            down: step === 1 ? 'story-panel-prev' : step < 2 ? 'detail-next' : 'detail-back',
           }}
         >
           {readingMode
@@ -247,68 +295,59 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         </FocusButton>
       </div>
 
-      {/* 分段正文容器 */}
+      {/* 正文容器：TV 模式下按步骤单屏渲染，普通模式下支持 PC 双栏（主故事 + 辅助解释）与手机单列 */}
       <div
         ref={articleRef}
-        className={'detail-article-box' + (readingMode ? ' is-reading-mode' : '')}
+        className={
+          'detail-article-box' +
+          (readingMode ? ' is-reading-mode' : '') +
+          (mode === 'normal' ? ' detail-normal-columns' : '')
+        }
         data-testid="detail-article-box"
       >
-        {step === 0 ? (
-          <div className="detail-step-content step-1" data-testid="detail-step-content-1">
-            <div className="badge-group">
-              <span className="category-badge">{categoryLabel(proverb.category)}</span>
-              {proverb.tags.map((tag) => (
-                <span key={tag} className="tag-badge">
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <h2 className="detail-proverb-title" data-testid="detail-proverb-title">
-              {proverb.text}
-            </h2>
-            <div className="detail-block">
-              <h3 className="detail-block-title">白话解释</h3>
-              <p className="detail-block-text">{proverb.plainExplanation}</p>
-            </div>
-            <div className="detail-block detail-block-subtle">
-              <h3 className="detail-block-title">为什么值得细看</h3>
-              <p className="detail-block-text">
-                老话往往凝结了某种日常经验，但每句老话都有它的前提。接下来通过一段普通人的生活小故事，看看它在具体情境里怎么用。
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {step === 1 ? (
-          <div className="detail-step-content step-2" data-testid="detail-step-content-2">
-            <div className="story-header">
-              <h2 className="story-title">{proverb.storyTitle}</h2>
-              <span className="story-fiction-badge" data-testid="story-fiction-badge">
-                虚构生活情境 · 仅供理解语义
-              </span>
-            </div>
-            <div className="story-grid" role="list">
-              {proverb.story.map((panel, index) => (
-                <div
-                  key={panel.beat}
-                  className="story-panel"
-                  role="listitem"
-                  data-testid={'story-panel-' + (index + 1)}
-                >
-                  <div className="story-panel-top">
-                    <span className="story-panel-num">第 {index + 1} 格</span>
-                    <span className="story-panel-beat">{BEAT_LABELS[panel.beat]}</span>
-                  </div>
-                  <SceneIllustration scene={panel.scene} />
-                  <p className="story-panel-text">{panel.text}</p>
+        <div className="detail-main-column">
+          {showStep1 ? (
+            <div className="detail-step-content step-1" data-testid="detail-step-content-1">
+              <div className="badge-group">
+                <span className="category-badge">{categoryLabel(proverb.category)}</span>
+                {proverb.tags.map((tag) => (
+                  <span key={tag} className="tag-badge">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <h2 className="detail-proverb-title" data-testid="detail-proverb-title">
+                {proverb.text}
+              </h2>
+              <div className="detail-block">
+                <h3 className="detail-block-title">白话解释</h3>
+                <p className="detail-block-text">{proverb.plainExplanation}</p>
+              </div>
+              {mode === 'tv' ? (
+                <div className="detail-block detail-block-subtle">
+                  <h3 className="detail-block-title">为什么值得细看</h3>
+                  <p className="detail-block-text">
+                    老话往往凝结了某种日常经验，但每句老话都有它的前提。接下来通过一段普通人的生活小故事，看看它在具体情境里怎么用。
+                  </p>
                 </div>
-              ))}
+              ) : null}
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {step === 2 ? (
-          <div className="detail-step-content step-3" data-testid="detail-step-content-3">
+          {showStep2 ? (
+            <div className="detail-step-content step-2" data-testid="detail-step-content-2">
+              <StoryViewer
+                proverb={proverb}
+                mode={mode}
+                upTarget="detail-read-area"
+                downTarget={step < 2 ? 'detail-next' : 'detail-back'}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {showStep3 ? (
+          <div className="detail-side-column detail-step-content step-3" data-testid="detail-step-content-3">
             <div className="detail-grid-two">
               <div className="detail-block">
                 <h3 className="detail-block-title">深入理解</h3>
@@ -324,12 +363,66 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
               </div>
             </div>
 
+            {proverb.commonMisreading || proverb.modernApplication ? (
+              <div className="detail-grid-two">
+                {proverb.commonMisreading ? (
+                  <div className="detail-block detail-block-misreading" data-testid="detail-misreading">
+                    <h3 className="detail-block-title">常见误读</h3>
+                    <p className="detail-block-text">{proverb.commonMisreading}</p>
+                  </div>
+                ) : null}
+                {proverb.modernApplication ? (
+                  <div className="detail-block detail-block-modern" data-testid="detail-modern">
+                    <h3 className="detail-block-title">现代生活应用</h3>
+                    <p className="detail-block-text">{proverb.modernApplication}</p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="detail-block detail-block-question">
               <h3 className="detail-block-title">想一想</h3>
               <p className="detail-block-text" data-testid="detail-question">
                 {proverb.reflectionQuestion}
               </p>
             </div>
+
+            {/* 对照理解与相关内容展示区 */}
+            {contrastItems.length > 0 || relatedItems.length > 0 ? (
+              <div className="detail-block detail-block-relations" data-testid="detail-relations">
+                <h3 className="detail-block-title">对照与延伸思考</h3>
+                {proverb.contrastNote ? (
+                  <p className="detail-contrast-note" data-testid="detail-contrast-note">
+                    {proverb.contrastNote}
+                  </p>
+                ) : contrastItems.length > 0 ? (
+                  <p className="detail-contrast-note" data-testid="detail-contrast-note">
+                    「{proverb.text}」与下方老话可对照理解：二者分别针对不同的处境与风险提醒，适用条件不同，并非哪一句永远绝对正确。
+                  </p>
+                ) : null}
+
+                <div className="detail-relation-cards">
+                  {contrastItems.map((item) => (
+                    <div key={'con-' + item.id} className="relation-card relation-card-contrast">
+                      <div className="relation-card-head">
+                        <span className="relation-type-pill pill-contrast">可对照理解</span>
+                        <strong className="relation-card-title">{item.text}</strong>
+                      </div>
+                      <p className="relation-card-desc">{item.plainExplanation}</p>
+                    </div>
+                  ))}
+                  {relatedItems.map((item) => (
+                    <div key={'rel-' + item.id} className="relation-card relation-card-related">
+                      <div className="relation-card-head">
+                        <span className="relation-type-pill pill-related">相近互参</span>
+                        <strong className="relation-card-title">{item.text}</strong>
+                      </div>
+                      <p className="relation-card-desc">{item.plainExplanation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="detail-source-row" data-testid="detail-source">
               <span className="source-status-tag">
@@ -355,7 +448,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             left: '@group:nav',
             right: step < 2 ? 'detail-next' : 'detail-fav',
             up: 'detail-read-area',
-            down: null,
+            down: firstRelationFocusId,
           }}
         >
           ← 上一段
@@ -373,7 +466,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             left: step > 0 ? 'detail-prev' : '@group:nav',
             right: 'detail-fav',
             up: 'detail-read-area',
-            down: null,
+            down: firstRelationFocusId,
           }}
         >
           {step < 2 ? '下一段 (' + (step + 2) + '/3) →' : '已是最后一段'}
@@ -389,7 +482,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             left: step < 2 ? 'detail-next' : 'detail-prev',
             right: 'detail-back',
             up: 'detail-read-area',
-            down: null,
+            down: firstRelationFocusId,
           }}
         >
           {favored ? '★ 已收藏' : '☆ 收藏'}
@@ -406,12 +499,43 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             left: 'detail-fav',
             right: null,
             up: 'detail-read-area',
-            down: null,
+            down: firstRelationFocusId,
           }}
         >
           返回
         </FocusButton>
       </div>
+
+      {/* 关联与对照条目快捷跳转按钮栏（支持遥控器聚焦与鼠标点击） */}
+      {firstRelationFocusId ? (
+        <div className="detail-relation-jump-bar" aria-label="关联与对照内容跳转">
+          <span className="relation-jump-label">延伸阅读跳转：</span>
+          {relationButtons.map((btn, idx) => {
+            const prevId = idx > 0 ? relationButtons[idx - 1].focusId : '@group:nav';
+            const nextId = idx < relationButtons.length - 1 ? relationButtons[idx + 1].focusId : null;
+            return (
+              <FocusButton
+                key={btn.focusId}
+                focusId={btn.focusId}
+                group="detail-relations"
+                variant="chip"
+                onPress={() => {
+                  setStep(0);
+                  push({ name: 'detail', id: btn.id });
+                }}
+                nav={{
+                  left: prevId,
+                  right: nextId,
+                  up: 'detail-back',
+                  down: null,
+                }}
+              >
+                {btn.label} →
+              </FocusButton>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }

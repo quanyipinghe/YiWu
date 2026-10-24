@@ -2,7 +2,7 @@
  * 设置页。
  *
  * 功能与焦点规则：
- * - TV 模式 / 普通模式切换（持久化在本地，支持 ?tv=1 / ?tv=0 临时覆盖）。
+ * - 支持三种模式选择：TV 远距模式 / 普通浏览模式 / 自动判断模式（持久化在本地，支持 ?tv=1 / ?tv=0 / ?mode=auto 临时覆盖）。
  * - 动画偏好切换（标准 / 减少动画）。
  * - 本地数据说明与遥控器操作说明。
  * - 清空本地数据：点击后弹出遥控器可操作的二次确认弹窗，关闭后恢复原按钮焦点。
@@ -26,6 +26,7 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
   const {
     data,
     mode,
+    modePreference,
     modeSource,
     motion,
     storageStatus,
@@ -67,6 +68,13 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
       ? 'settings-toggle-debug'
       : null;
 
+  const sourceLabel =
+    modeSource === 'query'
+      ? '（网址参数覆盖）'
+      : modeSource === 'saved'
+        ? '（已手动保存）'
+        : '（自动判断）';
+
   return (
     <section className="page-section settings-page" aria-label="应用设置">
       <div className="page-top-bar">
@@ -83,21 +91,22 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
         <div className="settings-card">
           <div className="settings-card-header">
             <h3 className="settings-card-title">显示与交互模式</h3>
-            <span className="settings-status-tag">
-              当前：{mode === 'tv' ? 'TV 模式' : '普通模式'}
-              {modeSource === 'query' ? '（网址参数覆盖）' : ''}
+            <span className="settings-status-tag" data-testid="settings-mode-status">
+              当前生效：{mode === 'tv' ? 'TV 模式' : '普通模式'}
+              {sourceLabel}
             </span>
           </div>
           <p className="settings-card-desc">
-            TV 模式默认开启大字号、远距离留白与焦点看门狗；普通模式适合桌面鼠标或手机触屏浏览。也可通过网址参数{' '}
-            <code>?tv=1</code> 或 <code>?tv=0</code> 临时覆盖。
+            优先级：<strong>显式网址参数</strong>（<code>?tv=1</code> / <code>?tv=0</code> /{' '}
+            <code>?mode=auto</code>） &gt; <strong>手动保存选择</strong> &gt;{' '}
+            <strong>自动判断</strong>。TV 模式开启大字号、安全留白与遥控器方向键导航；普通模式适合桌面鼠标/Tab 键或手机触屏浏览。
           </p>
           <div className="settings-btn-row">
             <FocusButton
               focusId="settings-mode-tv"
               group="settings-controls"
               variant="default"
-              selected={mode === 'tv'}
+              selected={modePreference === 'tv' || (modePreference === 'auto' && mode === 'tv' && modeSource === 'default')}
               onPress={() => setMode('tv')}
               nav={{
                 left: '@group:nav',
@@ -113,16 +122,32 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
               focusId="settings-mode-normal"
               group="settings-controls"
               variant="default"
-              selected={mode === 'normal'}
+              selected={modePreference === 'normal'}
               onPress={() => setMode('normal')}
               nav={{
                 left: 'settings-mode-tv',
-                right: null,
+                right: 'settings-mode-auto',
                 up: null,
                 down: 'settings-motion-reduced',
               }}
             >
               普通浏览模式（桌面 / 手机）
+            </FocusButton>
+
+            <FocusButton
+              focusId="settings-mode-auto"
+              group="settings-controls"
+              variant="default"
+              selected={data.settings.mode === 'auto'}
+              onPress={() => setMode('auto')}
+              nav={{
+                left: 'settings-mode-normal',
+                right: null,
+                up: null,
+                down: 'settings-motion-reduced',
+              }}
+            >
+              自动判断模式
             </FocusButton>
           </div>
         </div>
@@ -234,20 +259,20 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
           ) : null}
         </div>
 
-        {/* 4. 遥控器与返回键说明 */}
+        {/* 4. 遥控器与多端操作说明 */}
         <div className="settings-card">
           <div className="settings-card-header">
-            <h3 className="settings-card-title">遥控器操作与兼容说明</h3>
+            <h3 className="settings-card-title">多端操作与兼容说明</h3>
           </div>
           <ul className="settings-help-list">
             <li>
-              <strong>方向键（上下左右）</strong>：在导航栏、按钮与卡片之间移动焦点；到达边界时默认停留，不随机循环跳转。
+              <strong>TV 远距模式（遥控器）</strong>：方向键在导航栏、按钮与卡片间移动真实 DOM 焦点；确认键（Enter / OK）执行操作且长按防重；返回键优先关闭弹窗或退出阅读滚动模式。
             </li>
             <li>
-              <strong>确认键（Enter / OK）</strong>：执行当前聚焦按钮的操作；长按确认不会重复抽签或连续触发。
+              <strong>PC 普通模式（鼠标与键盘）</strong>：支持鼠标点击与 Tab / Shift+Tab 标准键盘导航、Enter / Space 激活按钮，不劫持方向键滚动，支持双栏阅读与文字复制。
             </li>
             <li>
-              <strong>返回键（Escape / 电视返回键）</strong>：优先关闭弹窗或退出阅读滚动模式，其次从详情返回上一页；页面内同时提供可见的「返回」按钮。
+              <strong>手机普通模式（触摸）</strong>：单列自适应排版，故事支持逐格或全览切换与左右轻扫手势，不强制自动聚焦以免弹出软键盘。
             </li>
             <li>
               <strong>宿主返回桥接</strong>：若运行在 Android WebView 中，宿主可调用{' '}

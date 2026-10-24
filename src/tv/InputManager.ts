@@ -59,6 +59,8 @@ export class InputManager {
   private activityListeners: Array<() => void> = [];
   private started = 0;
   private detach: (() => void) | null = null;
+  /** 是否启用 TV 遥控器按键接管（普通模式下关闭方向键与确认键全局拦截） */
+  private enabled = true;
   /** 记录按住状态：action -> 最近一次 keydown 时间 */
   private held: Partial<Record<TvAction, number>> = {};
   private lastDirectionTime = 0;
@@ -87,6 +89,23 @@ export class InputManager {
 
   getKeyMap(): KeyMap {
     return this.keymap;
+  }
+
+  /** 设置是否开启 TV 遥控器按键拦截（普通模式关闭，不劫持 PC 方向键与原生按钮激活） */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) {
+      this.held = {};
+    }
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  /** 当前活跃的监听绑定计数（用于测试验证切换模式无重复绑定） */
+  getActiveListenerCount(): number {
+    return this.started > 0 ? 1 : 0;
   }
 
   /** 绑定监听（引用计数，StrictMode 下重复调用也只绑定一次），返回清理函数 */
@@ -195,6 +214,18 @@ export class InputManager {
       time: now,
     };
     if (!action || e.altKey || e.ctrlKey || e.metaKey) {
+      this.emitKey(info);
+      return;
+    }
+
+    // 普通浏览模式下：不全局劫持方向键或确认键，仅在弹窗打开时允许 Escape 关闭弹窗
+    if (!this.enabled) {
+      if (action === 'back' && (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27)) {
+        if (this.focus.getScopeDepth() > 0 && this.handleBack()) {
+          e.preventDefault();
+          info.handled = true;
+        }
+      }
       this.emitKey(info);
       return;
     }

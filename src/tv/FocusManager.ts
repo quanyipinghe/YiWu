@@ -167,7 +167,18 @@ export class FocusManager {
     if (!el.isConnected) return false;
     if ((el as HTMLButtonElement).disabled) return false;
     if (el.getAttribute('aria-disabled') === 'true') return false;
-    if (el.closest('[hidden]')) return false;
+    if (el.tabIndex < 0 && el.getAttribute('tabindex') === '-1') return false;
+    if (el.closest('[hidden], [aria-hidden="true"], [data-layout-hidden="true"], .is-hidden-layout')) {
+      return false;
+    }
+    // 检查祖先节点是否通过内联样式隐藏（兼容 jsdom 环境）
+    let cur: HTMLElement | null = el;
+    while (cur) {
+      if (cur.style && (cur.style.display === 'none' || cur.style.visibility === 'hidden')) {
+        return false;
+      }
+      cur = cur.parentElement;
+    }
     return this.env.isVisible(el);
   }
 
@@ -523,6 +534,10 @@ export class FocusManager {
   /** 是否启用焦点看门狗（TV 模式开启，普通模式关闭以免打扰鼠标用户） */
   setWatchdog(enabled: boolean): void {
     this.watchdogEnabled = enabled;
+  }
+
+  isWatchdogEnabled(): boolean {
+    return this.watchdogEnabled;
   }
 
   /** 绑定 document 级 focusin / focusout 监听，返回清理函数 */

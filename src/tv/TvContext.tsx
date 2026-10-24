@@ -41,7 +41,11 @@ export function createTvManagers(): TvContextValue {
 
 export function TvProvider(props: TvProviderProps): JSX.Element {
   const ref = useRef<TvContextValue | null>(null);
-  if (!ref.current) ref.current = props.value || createTvManagers();
+  if (!ref.current) {
+    ref.current = props.value || createTvManagers();
+    ref.current.focus.setWatchdog(props.watchdog);
+    ref.current.input.setEnabled(props.watchdog);
+  }
   const value = ref.current;
 
   // 绑定全局监听；清理函数保证 StrictMode 下不会重复绑定
@@ -58,6 +62,10 @@ export function TvProvider(props: TvProviderProps): JSX.Element {
 
   useEffect(() => {
     value.focus.setWatchdog(props.watchdog);
+    value.input.setEnabled(props.watchdog);
+    if (props.watchdog) {
+      value.focus.ensureFocus();
+    }
   }, [value, props.watchdog]);
 
   return <TvContext.Provider value={value}>{props.children}</TvContext.Provider>;
@@ -100,6 +108,7 @@ export function useFocusGroup(name: string, options: GroupOptions): void {
 /**
  * 页面焦点：挂载时设置当前页面并恢复焦点（记忆 → 默认）。
  * 子组件的注册（layout effect）先于本 effect 执行，因此此时元素已注册。
+ * 普通模式下（watchdog=false）仅记录页面默认焦点，不强制触发 DOM autoFocus，避免移动端页面跳动或弹出软键盘。
  */
 export function usePageFocus(pageKey: string, getDefaults: () => string[], autoFocus = true): void {
   const { focus } = useTv();
@@ -108,7 +117,7 @@ export function usePageFocus(pageKey: string, getDefaults: () => string[], autoF
   useEffect(() => {
     const getter = () => defaultsRef.current();
     const cleanup = focus.setPage(pageKey, getter);
-    if (autoFocus && !focus.restorePage()) {
+    if (autoFocus && focus.isWatchdogEnabled() && !focus.restorePage()) {
       focus.queueFocus(getter());
     }
     return cleanup;

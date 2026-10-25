@@ -36,7 +36,7 @@ npm run dev
 # 3. 执行 TypeScript 类型检查
 npm run typecheck
 
-# 4. 执行内容库数据校验与统计报告（303 条内容、唯一性、视觉连续性与关联引用检查）
+# 4. 执行内容库数据校验与统计报告（327 条内容、唯一性、视觉连续性与关联引用检查）
 npm run check:content
 
 # 5. 执行自动化单元测试与遥控器全流程集成测试
@@ -182,7 +182,9 @@ override fun onBackPressed() {
 
 ## 七、内容库架构、画面系统与添加新内容的方法
 
-项目内置 **303 条** 高质量完整内容（详情见 [CONTENT_REPORT.md](./CONTENT_REPORT.md)），按批次拆分在 `src/data/batches/` 下，由 [src/data/proverbs.ts](./src/data/proverbs.ts) 统一汇总，类型定义在 [src/data/types.ts](./src/data/types.ts)，视觉素材目录定义在 [src/data/sceneCatalog.ts](./src/data/sceneCatalog.ts)。
+项目内置 **327 条** 高质量完整内容（详情见 [CONTENT_REPORT.md](./CONTENT_REPORT.md)），按批次拆分在 `src/data/batches/` 下，由 [src/data/proverbs.ts](./src/data/proverbs.ts) 统一汇总，类型定义在 [src/data/types.ts](./src/data/types.ts)，视觉素材目录定义在 [src/data/sceneCatalog.ts](./src/data/sceneCatalog.ts)。
+
+本次新增 **24 条常用熟语**（16 条歇后语、8 条常用俗语），位于 [batch7-familiar.ts](./src/data/batches/batch7-familiar.ts)。包括“竹篮打水——一场空”“八仙过海——各显神通”“失败是成功之母”等；主要类型沿用“俗语”，歇后语另加辅助标签，全部配有白话解释、四格故事、适用边界与出处说明。
 
 ### 1. 可复用 SVG 故事画面系统
 - **18 种场景背景 (`SceneKind`)**：客厅 (`living`)、厨房/餐桌 (`kitchen`)、书房 (`study`)、教室 (`classroom`)、办公室 (`office`)、商店/市场 (`market`)、街道 (`road`)、车站 (`station`)、庭院 (`courtyard`)、社区 (`community`)、田地/果园 (`orchard`)、山路 (`mountain`)、河边 (`river`)、小桥 (`bridge`)、风雨归途 (`rain`)、工坊/修理台 (`workshop`)、网络生活 (`digital`)、抽象寓意 (`abstract`)。
@@ -202,7 +204,7 @@ override fun onBackPressed() {
 
 ### 3. 数据来源与考据渠道说明（后续扩充参考指南）
 
-本项目收录的 **303 条老话数据** 遵循“**原句出处严谨考据，生活解析原创编撰**”的原则，整体分为两层结构：
+本项目收录的 **327 条老话数据** 遵循“**原句出处严谨考据，生活解析原创编撰**”的原则，整体分为两层结构：
 
 #### (1) 原句、词类属性与出处源流（考据渠道）
 - **成语、古籍名句、格言与箴言（`classical` 出处）**：

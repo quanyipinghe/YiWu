@@ -6,8 +6,9 @@ import { BATCH_GUANYONGYU } from './batches/batch3-guanyongyu';
 import { BATCH_GEYAN } from './batches/batch4-geyan';
 import { BATCH_ZHENYAN } from './batches/batch5-zhenyan';
 import { BATCH_JINGJU } from './batches/batch6-jingju';
+import { BATCH_FAMILIAR } from './batches/batch7-familiar';
 
-// 统一汇总完整内容库（保留全部 33 条历史 ID + 6 大分类扩展批次）
+// 统一汇总完整内容库，保留全部 33 条历史 ID。
 export const PROVERBS: Proverb[] = [
   ...LEGACY_PROVERBS,
   ...BATCH_SUYU,
@@ -15,5 +16,6 @@ export const PROVERBS: Proverb[] = [
   ...BATCH_GUANYONGYU,
   ...BATCH_GEYAN,
   ...BATCH_ZHENYAN,
-  ...BATCH_JINGJU
+  ...BATCH_JINGJU,
+  ...BATCH_FAMILIAR
 ];

@@ -109,7 +109,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
       left: '@group:nav',
       right: null,
       up: '@group:detail-steps',
-      down: step === 1 ? 'story-panel-prev' : '@group:detail-actions',
+      down: step === 1 ? '@group:detail-story-controls' : '@group:detail-actions',
     },
     enterTo: 'first',
   });
@@ -280,17 +280,16 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             group="detail-reader"
             variant={readingMode ? 'primary' : 'ghost'}
             selected={readingMode}
+            ariaLabel={readingMode ? '结束阅读滚动模式' : '阅读正文，按确认后用上下键滚动，按返回退出'}
             onPress={() => setReadingMode((prev) => !prev)}
             nav={{
               left: '@group:nav',
               right: null,
               up: 'detail-step-' + (step + 1),
-              down: step === 1 ? 'story-panel-prev' : step < 2 ? 'detail-next' : 'detail-back',
+              down: step === 1 ? '@group:detail-story-controls' : step < 2 ? 'detail-next' : 'detail-back',
             }}
           >
-            {readingMode
-              ? '正在阅读滚动模式（上下键滚动正文 · 按确认或返回结束阅读）'
-              : '进入阅读滚动模式（按确认后可用上下键滚动正文）'}
+            {readingMode ? '结束阅读' : '阅读正文'}
           </FocusButton>
         ) : null}
       </div>

@@ -192,6 +192,25 @@ async function run() {
       throw new Error('进入详情页焦点异常: ' + JSON.stringify(inDetail));
     }
 
+    // 短屏电视仍需保留正文滚动区域，阅读模式不能只滚动外层页面。
+    await pressKey('Enter', 13);
+    await pressKey('Enter', 13);
+    await send('Emulation.setDeviceMetricsOverride', {
+      width: 960, height: 480, deviceScaleFactor: 1, mobile: false,
+    });
+    await evaluate(`document.querySelector('[data-focus-id="detail-read-area"]').focus()`);
+    await pressKey('Enter', 13);
+    await pressKey('ArrowDown', 40);
+    const shortTvReading = await evaluate(`({
+      reading: document.querySelector('.detail-article-box').classList.contains('is-reading-mode'),
+      scrollTop: document.querySelector('.detail-article-box').scrollTop,
+      pageHeight: document.documentElement.scrollHeight
+    })`);
+    if (!shortTvReading.reading || shortTvReading.scrollTop <= 0 || shortTvReading.pageHeight > 481) {
+      throw new Error('短屏 TV 阅读滚动异常: ' + JSON.stringify(shortTvReading));
+    }
+    await pressKey('Escape', 27);
+
     // 4. 在 360x800、390x844、768x1024、1366x768、1920x1080、960x540、1280x720、3840x2160 视口下检查无横向溢出
     const viewports = [
       { width: 360, height: 800 },

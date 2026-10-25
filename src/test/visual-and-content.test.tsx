@@ -57,6 +57,28 @@ describe('内容库扩充、画面系统与多端适配专项测试', () => {
     unmountNode();
   });
 
+  it.each(['four-panel', 'contrast', 'branch', 'timeline'])('故事全览不重复展示，逐格阅读可切换并恢复全览（%s）', (layout) => {
+    const proverb = PROVERBS.find((p) => (p.storyStructure?.layout || 'four-panel') === layout)!;
+    mountNode(<TvProvider watchdog={false}><StoryViewer proverb={proverb} mode="normal" /></TvProvider>);
+    expect(document.querySelectorAll('.story-panel').length).toBe(layout === 'four-panel' ? 4 : 0);
+    const toggle = document.querySelector<HTMLButtonElement>('[data-focus-id="story-view-toggle"]');
+    expect(toggle).not.toBeNull();
+    act(() => toggle!.click());
+    const visiblePanels = () => Array.from(document.querySelectorAll<HTMLElement>('.story-panel'))
+      .filter((el) => window.getComputedStyle(el).display !== 'none');
+    expect(visiblePanels().length).toBe(1);
+    expect(visiblePanels()[0].getAttribute('data-testid')).toBe('story-panel-1');
+    act(() => document.querySelector<HTMLButtonElement>('[data-focus-id="story-panel-next"]')!.click());
+    expect(visiblePanels()[0].getAttribute('data-testid')).toBe('story-panel-2');
+    const next = document.querySelector<HTMLButtonElement>('[data-focus-id="story-panel-next"]')!;
+    act(() => next.focus());
+    act(() => next.click());
+    act(() => next.click());
+    expect(document.activeElement?.getAttribute('data-focus-id')).toBe('story-panel-prev');
+    act(() => toggle!.click());
+    expect(document.querySelectorAll('.story-panel').length).toBe(layout === 'four-panel' ? 4 : 0);
+  });
+
   it('完整内容库不少于 300 条，完整保留全部 33 条历史 ID，且关联与对照 ID 全部真实有效', () => {
     expect(PROVERBS.length).toBeGreaterThanOrEqual(300);
     expect(LEGACY_PROVERBS.length).toBeGreaterThanOrEqual(33);

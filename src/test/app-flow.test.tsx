@@ -90,6 +90,28 @@ afterEach(() => {
 });
 
 describe('全流程遥控器操作闭环 (App Integration)', () => {
+  it('故事控制栏跳过不可用的上一格，读完最后一格后焦点留在可用操作上', () => {
+    renderApp({ search: '?tv=1', random: () => 0 });
+    KEYS.enter();
+    KEYS.enter();
+    KEYS.enter();
+    KEYS.up();
+    expect(activeFocusId()).toBe('detail-read-area');
+    KEYS.down();
+    expect(activeFocusId()).toBe('story-panel-next');
+    KEYS.enter();
+    KEYS.enter();
+    KEYS.enter();
+    expect(document.querySelector('[data-testid="story-progress"]')?.textContent).toContain('故事 4 / 4');
+    expect(activeFocusId()).toBe('story-panel-prev');
+    KEYS.enter();
+    expect(document.querySelector('[data-testid="story-progress"]')?.textContent).toContain('故事 3 / 4');
+    KEYS.enter();
+    KEYS.enter();
+    expect(document.querySelector('[data-testid="story-progress"]')?.textContent).toContain('故事 1 / 4');
+    expect(activeFocusId()).toBe('story-panel-next');
+  });
+
   it.each([['?tv=0', 1], ['?tv=1', 1], ['?tv=1', 2]] as const)('延伸阅读卡片直接跳转，遥控器跟随单列或双列布局（%s，%i 列）', (search, columns) => {
     const storage = new AppStorage(window.localStorage);
     const seed = createEmptyData();

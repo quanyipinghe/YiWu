@@ -58,6 +58,11 @@ kbd {
   user-select: text;
 }
 
+.app-shell.mode-tv {
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* 顶部栏 */
 .app-header {
   display: flex;
@@ -922,6 +927,20 @@ kbd {
   display: none;
 }
 
+.story-viewer.is-single-view .story-grid {
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.story-viewer.is-single-view .story-panel {
+  width: 100%;
+  margin: 0.35rem 0;
+}
+
+.is-tv-story .story-grid {
+  display: none;
+}
+
 /* TV 模式单格焦点放大舞台 */
 .tv-story-spotlight {
   background-color: #222838;
@@ -976,13 +995,12 @@ kbd {
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 0.75rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid #2e3546;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #2e3546;
 }
 
-.story-stepper-bar .tv-focusable,
-.story-stepper-bar .story-view-toggle-btn {
+.story-stepper-bar .tv-focusable {
   margin-right: 0.65rem;
   margin-bottom: 0.3rem;
   padding: 0.45rem 0.9rem;
@@ -1477,6 +1495,8 @@ kbd {
 .modal-dialog {
   width: 100%;
   max-width: 34rem;
+  max-height: 92vh;
+  overflow-y: auto;
   background-color: #1e2330;
   border: 2px solid #4a536b;
   border-radius: 0.85rem;
@@ -1488,6 +1508,10 @@ kbd {
   margin: 0 0 0.75rem 0;
   font-size: 1.35rem;
   color: #f4f1ea;
+  position: sticky;
+  top: 0;
+  background-color: #1e2330;
+  z-index: 1;
 }
 
 .modal-body {
@@ -1501,6 +1525,7 @@ kbd {
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .modal-actions .tv-focusable {
@@ -1950,6 +1975,17 @@ kbd {
   .mode-normal .pager-status {
     font-size: 0.85rem;
   }
+  .mode-normal .story-progress-text {
+    order: -1;
+    width: 100%;
+  }
+  .modal-dialog {
+    padding: 1rem;
+  }
+  .modal-actions .tv-focusable {
+    margin-left: 0.4rem;
+    margin-bottom: 0.35rem;
+  }
   .mode-normal .today-stage {
     padding-top: 0;
   }
@@ -2025,16 +2061,12 @@ kbd {
     margin-bottom: 0.45rem;
   }
   .detail-article-box {
-    max-height: none;
     padding: 1rem;
   }
 }
 
 /* 手机横屏紧凑高度适配（防止内容被固定高度裁切） */
 @media (max-height: 520px) and (orientation: landscape) {
-  .detail-article-box {
-    max-height: none;
-  }
   .app-shell {
     padding: 0.6rem 1.2rem;
   }

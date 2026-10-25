@@ -13,11 +13,11 @@
  * - PC 普通模式：2×2 网格或双栏对照展示，支持鼠标与 Tab 键切换。
  * - 手机普通模式：支持纵向通览或逐格查看，支持水平轻扫手势（不阻碍纵向滚动）并保留可见按钮。
  */
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { BEAT_LABELS } from '../data/content';
 import type { Proverb, StoryBeat, StoryStructure } from '../data/types';
 import { FocusButton } from '../tv/FocusButton';
-import { useFocusGroup } from '../tv/TvContext';
+import { useFocusGroup, useTv } from '../tv/TvContext';
 import { SceneIllustration } from './SceneIllustration';
 
 export interface StoryViewerProps {
@@ -49,10 +49,11 @@ export function getStoryStructure(proverb: Proverb): StoryStructure {
 
 export function StoryViewer(props: StoryViewerProps): JSX.Element {
   const { proverb, mode } = props;
+  const { focus } = useTv();
   const structure = getStoryStructure(proverb);
   const totalFrames = 4;
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [mobileSingleView, setMobileSingleView] = useState<boolean>(false);
+  const [singleView, setSingleView] = useState(false);
 
   // 触摸滑动手势记录（仅识别明显的水平滑动，绝不阻止垂直滚动）
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -99,6 +100,14 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
     }
   };
 
+  useLayoutEffect(() => {
+    if (activeIndex === 0 && focus.getActiveId() === 'story-panel-prev') {
+      focus.focus('story-panel-next');
+    } else if (activeIndex === totalFrames - 1 && focus.getActiveId() === 'story-panel-next') {
+      focus.focus('story-panel-prev');
+    }
+  }, [activeIndex, focus]);
+
   const activePanel = proverb.story[activeIndex] || proverb.story[0];
 
   return (
@@ -107,7 +116,7 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
         'story-viewer story-layout-' +
         structure.layout +
         (mode === 'tv' ? ' is-tv-story' : ' is-normal-story') +
-        (mobileSingleView ? ' is-mobile-single' : '')
+        (singleView ? ' is-single-view' : '')
       }
       data-testid="story-viewer"
       data-story-layout={structure.layout}
@@ -125,6 +134,61 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
         <span className="story-fiction-badge" data-testid="story-fiction-badge">
           虚构生活情境 · 仅供理解语义
         </span>
+      </div>
+
+      {/* 先选阅读方式，再浏览故事 */}
+      <div className="story-stepper-bar" aria-label="故事画格进度与切换">
+        {mode === 'tv' || singleView ? (
+          <>
+            <FocusButton
+              focusId="story-panel-prev"
+              group="detail-story-controls"
+              variant="ghost"
+              disabled={activeIndex <= 0}
+              onPress={handlePrev}
+              nav={{
+                left: '@group:nav',
+                right: activeIndex < totalFrames - 1 ? 'story-panel-next' : null,
+                up: props.upTarget || 'detail-read-area',
+                down: props.downTarget || 'detail-next',
+              }}
+            >
+              上一格
+            </FocusButton>
+
+            <span className="story-progress-text" data-testid="story-progress">
+              故事 {activeIndex + 1} / {totalFrames}（{BEAT_LABELS[activePanel.beat]}）
+            </span>
+
+            <FocusButton
+              focusId="story-panel-next"
+              group="detail-story-controls"
+              variant="ghost"
+              disabled={activeIndex >= totalFrames - 1}
+              onPress={handleNext}
+              nav={{
+                left: activeIndex > 0 ? 'story-panel-prev' : '@group:nav',
+                right: null,
+                up: props.upTarget || 'detail-read-area',
+                down: props.downTarget || 'detail-next',
+              }}
+            >
+              下一格
+            </FocusButton>
+          </>
+        ) : null}
+
+        {mode === 'normal' ? (
+          <FocusButton
+            focusId="story-view-toggle"
+            group="detail-story-controls"
+            variant="ghost"
+            selected={singleView}
+            onPress={() => setSingleView((v) => !v)}
+          >
+            {singleView ? '展开全览' : '逐格阅读'}
+          </FocusButton>
+        ) : null}
       </div>
 
       {/* TV 模式焦点舞台：突出展示当前选中画格的大图与大字 */}
@@ -157,7 +221,7 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
       ) : null}
 
       {/* 按可辨识联合类型渲染不同故事结构 */}
-      {structure.layout === 'contrast' ? (
+      {structure.layout === 'contrast' && !singleView ? (
         <div className="story-contrast-container" data-testid="story-layout-contrast">
           <div className="story-contrast-premise">
             <div className="story-contrast-premise-visual">
@@ -227,7 +291,7 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
         </div>
       ) : null}
 
-      {structure.layout === 'branch' ? (
+      {structure.layout === 'branch' && !singleView ? (
         <div className="story-branch-container" data-testid="story-layout-branch">
           <div className="story-branch-root">
             <div className="story-branch-root-header">
@@ -311,7 +375,7 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
         </div>
       ) : null}
 
-      {structure.layout === 'timeline' ? (
+      {structure.layout === 'timeline' && !singleView ? (
         <div className="story-timeline-container" data-testid="story-layout-timeline">
           <div className="story-timeline-track" role="list">
             {structure.stages.map((stage, idx) => {
@@ -345,91 +409,38 @@ export function StoryViewer(props: StoryViewerProps): JSX.Element {
         </div>
       ) : null}
 
-      {/* 四格画格列表（four-panel 主视图，同时为其他布局保留四格结构概览与可访问性） */}
-      <div
-        className={
-          'story-grid' +
-          (structure.layout !== 'four-panel' ? ' story-grid-compact' : '')
-        }
-        role="list"
-      >
-        {proverb.story.map((panel, index) => {
-          const isActive = activeIndex === index;
-          return (
-            <div
-              key={panel.beat + '-' + index}
-              className={
-                'story-panel' +
-                (isActive ? ' is-active-panel' : '') +
-                (mobileSingleView && !isActive ? ' is-hidden-mobile-frame' : '')
-              }
-              role="listitem"
-              data-testid={'story-panel-' + (index + 1)}
-            >
-              <div className="story-panel-top">
-                <span className="story-panel-num">第 {index + 1} 格</span>
-                <span className="story-panel-beat">{BEAT_LABELS[panel.beat]}</span>
+      {/* 全览只显示当前结构；逐格阅读统一使用四个生活情境。 */}
+      {structure.layout === 'four-panel' || singleView ? (
+        <div className="story-grid" role="list">
+          {proverb.story.map((panel, index) => {
+            const isActive = activeIndex === index;
+            return (
+              <div
+                key={panel.beat + '-' + index}
+                className={
+                  'story-panel' +
+                  (isActive ? ' is-active-panel' : '') +
+                  (singleView && !isActive ? ' is-hidden-mobile-frame' : '')
+                }
+                role="listitem"
+                data-testid={'story-panel-' + (index + 1)}
+              >
+                <div className="story-panel-top">
+                  <span className="story-panel-num">第 {index + 1} 格</span>
+                  <span className="story-panel-beat">{BEAT_LABELS[panel.beat]}</span>
+                </div>
+                <SceneIllustration
+                  scene={panel.scene}
+                  beat={panel.beat}
+                  visual={panel.visual}
+                  storySeed={proverb.id}
+                />
+                <p className="story-panel-text">{panel.text}</p>
               </div>
-              <SceneIllustration
-                scene={panel.scene}
-                beat={panel.beat}
-                visual={panel.visual}
-                storySeed={proverb.id}
-              />
-              <p className="story-panel-text">{panel.text}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 底部故事翻格控制栏与进度提示 */}
-      <div className="story-stepper-bar" aria-label="故事画格进度与切换">
-        <FocusButton
-          focusId="story-panel-prev"
-          group="detail-story-controls"
-          variant="ghost"
-          disabled={activeIndex <= 0}
-          onPress={handlePrev}
-          nav={{
-            left: '@group:nav',
-            right: activeIndex < totalFrames - 1 ? 'story-panel-next' : null,
-            up: props.upTarget || 'detail-read-area',
-            down: props.downTarget || 'detail-next',
-          }}
-        >
-          ← 上一格
-        </FocusButton>
-
-        <span className="story-progress-text" data-testid="story-progress">
-          故事 {activeIndex + 1} / {totalFrames}（{BEAT_LABELS[activePanel.beat]}）
-        </span>
-
-        <FocusButton
-          focusId="story-panel-next"
-          group="detail-story-controls"
-          variant="ghost"
-          disabled={activeIndex >= totalFrames - 1}
-          onPress={handleNext}
-          nav={{
-            left: activeIndex > 0 ? 'story-panel-prev' : '@group:nav',
-            right: null,
-            up: props.upTarget || 'detail-read-area',
-            down: props.downTarget || 'detail-next',
-          }}
-        >
-          下一格 →
-        </FocusButton>
-
-        {mode === 'normal' ? (
-          <button
-            type="button"
-            className="btn btn-ghost story-view-toggle-btn"
-            onClick={() => setMobileSingleView((v) => !v)}
-          >
-            {mobileSingleView ? '切换为四格全览' : '切换为单格查看'}
-          </button>
-        ) : null}
-      </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

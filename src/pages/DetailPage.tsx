@@ -1,5 +1,5 @@
 /**
- * 详情页：分段或双栏阅读一句老话。
+ * 详情页：分三段阅读一句老话。
  *
  * 多端布局与交互：
  * - TV 模式：严格三步分段展示（不在一屏内堆积全部长文）：
@@ -7,8 +7,7 @@
  *   - 第二步（2/3）：生活故事（支持四格、前后对照、选择分支、时间推进，标注「虚构生活情境」，支持上一格/下一格切换）
  *   - 第三步（3/3）：深入解释 + 适用边界 + 常见误解 + 现代应用 + 思考问题 + 对照/相关老话 + 来源说明
  * - 普通模式（PC / 手机）：
- *   - PC 宽屏采用双栏布局（左侧主故事与释义，右侧深入解释、适用边界、对照反思与关联推荐）；
- *   - 手机窄屏自动变为单列流式布局，无需受限于电视固定高度容器。
+ *   - 与 TV 模式使用相同的三步切换，正文随页面自然滚动。
  *
  * 阅读滚动模式：
  * - 提供可聚焦的「阅读滚动模式」入口（detail-read-area）。
@@ -72,7 +71,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
   }
 
   const firstRelationFocusId =
-    (mode === 'normal' || step === 2) && relationButtons.length > 0
+    step === 2 && relationButtons.length > 0
       ? relationButtons[0].focusId
       : null;
 
@@ -213,9 +212,9 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
   }
 
   const favored = isFavorite(proverb.id);
-  const showStep1 = mode === 'normal' || step === 0;
-  const showStep2 = mode === 'normal' || step === 1;
-  const showStep3 = mode === 'normal' || step === 2;
+  const showStep1 = step === 0;
+  const showStep2 = step === 1;
+  const showStep3 = step === 2;
 
   return (
     <section
@@ -295,13 +294,13 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         </FocusButton>
       </div>
 
-      {/* 正文容器：TV 模式下按步骤单屏渲染，普通模式下支持 PC 双栏（主故事 + 辅助解释）与手机单列 */}
+      {/* 正文容器：各模式均只渲染当前步骤，普通模式随页面自然滚动 */}
       <div
         ref={articleRef}
         className={
           'detail-article-box' +
           (readingMode ? ' is-reading-mode' : '') +
-          (mode === 'normal' ? ' detail-normal-columns' : '')
+          (mode === 'normal' ? ' detail-normal-reading' : '')
         }
         data-testid="detail-article-box"
       >

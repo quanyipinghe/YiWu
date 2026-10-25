@@ -89,6 +89,47 @@ afterEach(() => {
 });
 
 describe('全流程遥控器操作闭环 (App Integration)', () => {
+  it.each(['?tv=0', '?tv=1'])('鼠标分段阅读仅显示当前段，支持前后切换（%s）', (search) => {
+    renderApp({ search, random: () => 0 });
+
+    const button = (id: string) =>
+      document.querySelector<HTMLButtonElement>('[data-focus-id="' + id + '"]')!;
+    const click = (id: string) => act(() => button(id).click());
+    const expectStep = (step: number) => {
+      expect(document.querySelector('[data-testid="detail-step-heading"]')?.textContent)
+        .toContain('（' + step + ' / 3）');
+      expect(document.querySelectorAll('.detail-step-content').length).toBe(1);
+      expect(document.querySelector('[data-testid="detail-step-content-' + step + '"]'))
+        .not.toBeNull();
+    };
+
+    click('today-draw');
+    click('today-read');
+    expectStep(1);
+    expect(button('detail-prev').disabled).toBe(true);
+
+    click('detail-next');
+    expectStep(2);
+    expect(document.querySelector('[data-testid="story-viewer"]')).not.toBeNull();
+    expect(button('detail-prev').disabled).toBe(false);
+
+    click('detail-prev');
+    expectStep(1);
+    click('detail-next');
+    click('detail-next');
+    expectStep(3);
+    expect(button('detail-next').disabled).toBe(true);
+
+    click('detail-prev');
+    expectStep(2);
+    click('detail-step-3');
+    expectStep(3);
+    click('detail-step-1');
+    expectStep(1);
+    click('detail-back');
+    expect(document.querySelector('[data-testid="revealed-card"]')).not.toBeNull();
+  });
+
   it('首页抽签、长按确认防重、进入详情分段阅读、阅读滚动模式与返回恢复焦点', () => {
     let currentDay = new Date(2026, 9, 24, 9, 0, 0);
     renderApp({

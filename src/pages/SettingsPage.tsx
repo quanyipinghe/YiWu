@@ -97,9 +97,8 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
             </span>
           </div>
           <p className="settings-card-desc">
-            优先级：<strong>显式网址参数</strong>（<code>?tv=1</code> / <code>?tv=0</code> /{' '}
-            <code>?mode=auto</code>） &gt; <strong>手动保存选择</strong> &gt;{' '}
-            <strong>自动判断</strong>。TV 模式开启大字号、安全留白与遥控器方向键导航；普通模式适合桌面鼠标/Tab 键或手机触屏浏览。
+            在电视上使用大字号与遥控器导航，在手机或电脑上自然滚动阅读。也可以让应用自动选择。
+            {modeSource === 'query' ? '当前链接已指定显示模式，需移除网址中的模式参数后，手动选择才会生效。' : ''}
           </p>
           <div className="settings-btn-row">
             <FocusButton
@@ -203,14 +202,13 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
           <div className="settings-card-header">
             <h3 className="settings-card-title">本地数据管理</h3>
             <span className="settings-status-tag">
-              存储状态：{storageStatus === 'ok' ? 'localStorage 正常' : '仅当前会话（降级）'}
+              {storageStatus === 'ok' ? '已保存在当前设备' : '仅当前会话有效'}
             </span>
           </div>
           <p className="settings-card-desc">
             已累计抽取 <strong>{data.history.length}</strong> 天，收藏{' '}
             <strong>{data.favorites.length}</strong> 句老话，当前处于第{' '}
-            <strong>{data.round.number}</strong> 轮。所有数据保存在本机浏览器{' '}
-            <code>yiwu:v1:data</code> 中，清除浏览器缓存或执行下方清空操作会重置记录。
+            <strong>{data.round.number}</strong> 轮。记录仅保存在当前设备，清除浏览器数据或执行下方清空操作会重置记录，建议提前备份。
           </p>
           <div className="settings-btn-row">
             <FocusButton
@@ -248,7 +246,7 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
                   down: props.showDebugEntry ? 'settings-toggle-debug' : null,
                 }}
               >
-                导出 / 导入备份数据（JSON）
+                备份与恢复记录
               </FocusButton>
             ) : null}
           </div>
@@ -262,7 +260,7 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
         {/* 4. 遥控器与多端操作说明 */}
         <div className="settings-card">
           <div className="settings-card-header">
-            <h3 className="settings-card-title">多端操作与兼容说明</h3>
+            <h3 className="settings-card-title">使用帮助</h3>
           </div>
           <ul className="settings-help-list">
             <li>
@@ -275,8 +273,7 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
               <strong>手机普通模式（触摸）</strong>：单列自适应排版，故事支持逐格或全览切换与左右轻扫手势，不强制自动聚焦以免弹出软键盘。
             </li>
             <li>
-              <strong>宿主返回桥接</strong>：若运行在 Android WebView 中，宿主可调用{' '}
-              <code>window.tvApp.handleBack()</code> 触发网页内返回。
+              <strong>记录与隐私</strong>：无需注册，收藏与足迹仅保存在当前设备，不会自动同步到其他设备。
             </li>
           </ul>
 

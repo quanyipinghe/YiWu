@@ -220,8 +220,17 @@ async function run() {
 
     // 5. 验证 window.tvApp.handleBack() 宿主桥接从详情返回今日页
     const backHandled = await evaluate(`window.tvApp.handleBack()`);
+    // 返回后的页面 effect 异步恢复焦点，等待目标状态而非读取过渡中的导航焦点。
     const afterBack = await evaluate(
-      `document.activeElement && document.activeElement.getAttribute('data-focus-id')`,
+      `new Promise(resolve => {
+        const deadline = performance.now() + 1000;
+        function check() {
+          const id = document.activeElement && document.activeElement.getAttribute('data-focus-id');
+          if (id === 'today-read' || performance.now() >= deadline) resolve(id);
+          else requestAnimationFrame(check);
+        }
+        check();
+      })`,
     );
     if (!backHandled || afterBack !== 'today-read') {
       throw new Error('window.tvApp.handleBack() 返回异常: ' + afterBack);

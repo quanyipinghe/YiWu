@@ -5,7 +5,7 @@
  * - 右侧：主要内容区域。
  * - 底部：简短清晰的遥控器操作提示。
  */
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { useAppState } from '../app/AppState';
 import { useRouter, type RootName } from '../app/router';
 import { formatFullDate, formatWeekday } from '../domain/date';
@@ -47,6 +47,12 @@ export function Layout(props: LayoutProps): JSX.Element {
   const { today, storageStatus, notice, dismissNotice, mode } = useAppState();
   const { current, rootName, navigateRoot } = useRouter();
   const { focus } = useTv();
+
+  // rem 取根字号，电视字号需随显示模式切换，不能只按窗口宽度放大。
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-display-mode', mode);
+    return () => document.documentElement.removeAttribute('data-display-mode');
+  }, [mode]);
 
   // 主导航分组：纵向排列，向右进入内容区，上下到头停留，不循环跳转
   useFocusGroup('nav', {

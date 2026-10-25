@@ -89,6 +89,25 @@ afterEach(() => {
 });
 
 describe('全流程遥控器操作闭环 (App Integration)', () => {
+  it('显示模式切换同步根字号模式，卸载后清理，普通模式不提供遥控器阅读入口', () => {
+    renderApp({ search: '', initialRoute: 'settings' });
+    const button = (id: string) =>
+      document.querySelector<HTMLButtonElement>('[data-focus-id="' + id + '"]')!;
+
+    act(() => button('settings-mode-normal').click());
+    expect(document.documentElement.getAttribute('data-display-mode')).toBe('normal');
+    act(() => button('settings-mode-tv').click());
+    expect(document.documentElement.getAttribute('data-display-mode')).toBe('tv');
+    act(() => button('settings-mode-normal').click());
+    act(() => button('nav-today').click());
+    act(() => button('today-draw').click());
+    act(() => button('today-read').click());
+    expect(document.querySelector('[data-focus-id="detail-read-area"]')).toBeNull();
+    act(() => root!.unmount());
+    root = null;
+    expect(document.documentElement.hasAttribute('data-display-mode')).toBe(false);
+  });
+
   it.each(['?tv=0', '?tv=1'])('鼠标分段阅读仅显示当前段，支持前后切换（%s）', (search) => {
     renderApp({ search, random: () => 0 });
 

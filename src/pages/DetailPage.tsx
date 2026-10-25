@@ -236,7 +236,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             down: 'detail-read-area',
           }}
         >
-          1. 原句与释义
+          1. 释义
         </FocusButton>
         <FocusButton
           focusId="detail-step-2"
@@ -251,7 +251,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             down: 'detail-read-area',
           }}
         >
-          2. 故事与场景
+          2. 故事
         </FocusButton>
         <FocusButton
           focusId="detail-step-3"
@@ -266,7 +266,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             down: 'detail-read-area',
           }}
         >
-          3. 边界与思考
+          3. 思考
         </FocusButton>
       </div>
 
@@ -275,23 +275,25 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         <span className="detail-step-heading" data-testid="detail-step-heading">
           {STEP_TITLES[step]}（{step + 1} / 3）
         </span>
-        <FocusButton
-          focusId="detail-read-area"
-          group="detail-reader"
-          variant={readingMode ? 'primary' : 'ghost'}
-          selected={readingMode}
-          onPress={() => setReadingMode((prev) => !prev)}
-          nav={{
-            left: '@group:nav',
-            right: null,
-            up: 'detail-step-' + (step + 1),
-            down: step === 1 ? 'story-panel-prev' : step < 2 ? 'detail-next' : 'detail-back',
-          }}
-        >
-          {readingMode
-            ? '正在阅读滚动模式（上下键滚动正文 · 按确认或返回结束阅读）'
-            : '进入阅读滚动模式（按确认后可用上下键滚动正文）'}
-        </FocusButton>
+        {mode === 'tv' ? (
+          <FocusButton
+            focusId="detail-read-area"
+            group="detail-reader"
+            variant={readingMode ? 'primary' : 'ghost'}
+            selected={readingMode}
+            onPress={() => setReadingMode((prev) => !prev)}
+            nav={{
+              left: '@group:nav',
+              right: null,
+              up: 'detail-step-' + (step + 1),
+              down: step === 1 ? 'story-panel-prev' : step < 2 ? 'detail-next' : 'detail-back',
+            }}
+          >
+            {readingMode
+              ? '正在阅读滚动模式（上下键滚动正文 · 按确认或返回结束阅读）'
+              : '进入阅读滚动模式（按确认后可用上下键滚动正文）'}
+          </FocusButton>
+        ) : null}
       </div>
 
       {/* 正文容器：各模式均只渲染当前步骤，普通模式随页面自然滚动 */}

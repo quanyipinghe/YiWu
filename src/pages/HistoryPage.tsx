@@ -198,6 +198,7 @@ export function HistoryPage(): JSX.Element {
                       <span className="card-row-title">{item.proverb.text}</span>
                       <span className="history-read-more">查看详情 →</span>
                     </div>
+                    <p className="card-row-desc history-summary">{item.proverb.plainExplanation}</p>
                   </FocusButton>
                 </li>
               );

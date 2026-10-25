@@ -267,7 +267,7 @@ export function SettingsPage(props: SettingsPageProps): JSX.Element {
               <strong>TV 远距模式（遥控器）</strong>：方向键在导航栏、按钮与卡片间移动真实 DOM 焦点；确认键（Enter / OK）执行操作且长按防重；返回键优先关闭弹窗或退出阅读滚动模式。
             </li>
             <li>
-              <strong>PC 普通模式（鼠标与键盘）</strong>：支持鼠标点击与 Tab / Shift+Tab 标准键盘导航、Enter / Space 激活按钮，不劫持方向键滚动，支持双栏阅读与文字复制。
+              <strong>PC 普通模式（鼠标与键盘）</strong>：支持鼠标点击与 Tab / Shift+Tab 键盘导航、Enter / Space 激活按钮，可自然滚动阅读与复制文字。
             </li>
             <li>
               <strong>手机普通模式（触摸）</strong>：单列自适应排版，故事支持逐格或全览切换与左右轻扫手势，不强制自动聚焦以免弹出软键盘。

@@ -410,6 +410,9 @@ kbd {
 .tv-focusable:focus .card-row-desc,
 .tv-focusable:focus .history-date-badge,
 .tv-focusable:focus .history-read-more,
+.tv-focusable:focus .relation-card-title,
+.tv-focusable:focus .relation-card-desc,
+.tv-focusable:focus .relation-read-more,
 .tv-focusable:focus .nav-label {
   color: #1c2028;
 }
@@ -418,6 +421,9 @@ kbd {
 .tv-focusable[data-tv-focused="true"] .card-row-desc,
 .tv-focusable[data-tv-focused="true"] .history-date-badge,
 .tv-focusable[data-tv-focused="true"] .history-read-more,
+.tv-focusable[data-tv-focused="true"] .relation-card-title,
+.tv-focusable[data-tv-focused="true"] .relation-card-desc,
+.tv-focusable[data-tv-focused="true"] .relation-read-more,
 .tv-focusable[data-tv-focused="true"] .nav-label {
   color: #1c2028;
 }
@@ -465,6 +471,10 @@ kbd {
   color: #d6d1c4;
   border: 1px solid #394052;
   font-size: 0.85rem;
+}
+
+.topic-tags {
+  margin: -0.4rem 0 1.2rem;
 }
 
 .page-section {
@@ -1157,6 +1167,7 @@ kbd {
 
 .detail-block-relations {
   border-left: 4px solid #8ab4f8;
+  margin-top: 1rem;
 }
 
 .detail-contrast-note {
@@ -1219,26 +1230,11 @@ kbd {
   color: #c4bfb4;
 }
 
-.detail-relation-jump-bar {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
+.relation-read-more {
+  display: block;
   margin-top: 0.65rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid #2b303d;
-}
-
-.relation-jump-label {
   font-size: 0.9rem;
-  color: #b9b4a8;
-  margin-right: 0.6rem;
-  margin-bottom: 0.35rem;
-}
-
-.detail-relation-jump-bar .tv-focusable {
-  margin-right: 0.55rem;
-  margin-bottom: 0.35rem;
+  color: #f2c879;
 }
 
 /* 出处栏 */
@@ -1326,6 +1322,7 @@ kbd {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .card-row-title {
@@ -1356,6 +1353,12 @@ kbd {
 .history-read-more {
   font-size: 0.92rem;
   color: #b9b4a8;
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+}
+
+.history-summary {
+  margin-top: 0.5rem;
 }
 
 .page-indicator {
@@ -1610,6 +1613,26 @@ kbd {
   padding-top: 1rem;
 }
 
+.mode-normal .tag-badge {
+  padding: 0.15rem 0;
+  margin-right: 0.8rem;
+  border: 0;
+  background-color: transparent;
+  color: #b9b4a8;
+}
+
+.mode-normal .badge-group {
+  margin-bottom: 0.75rem;
+}
+
+.mode-normal .card-top-meta {
+  align-items: center;
+}
+
+.mode-normal .card-top-meta .badge-group {
+  margin-bottom: 0;
+}
+
 .mode-normal .proverb-card {
   padding: 2rem 2.25rem;
   border-top: 3px solid #b8432f;
@@ -1679,6 +1702,88 @@ kbd {
   border-width: 1px;
 }
 
+.detail-mode-normal .step-1,
+.detail-mode-normal .step-3 {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.detail-mode-normal .detail-grid-two {
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.detail-mode-normal .detail-grid-two > .detail-block {
+  flex: 0 0 auto;
+  margin: 0 0 1rem;
+}
+
+.detail-mode-normal .detail-block-boundary {
+  background-color: #292127;
+}
+
+.detail-mode-normal .detail-block-question {
+  background-color: #28271f;
+}
+
+.detail-mode-normal .detail-block-misreading,
+.detail-mode-normal .detail-block-modern {
+  border-left: 0;
+}
+
+.detail-mode-normal .detail-block-relations {
+  padding: 1.25rem 0 0;
+  margin-top: 1.5rem;
+  border-left: 0;
+  border-top: 1px solid #343b4d;
+}
+
+.detail-mode-normal .detail-bottom-actions .tv-focusable:disabled {
+  display: none;
+}
+
+.mode-normal .fav-card-row {
+  flex-direction: column;
+  background-color: #1b1f29;
+  border: 1px solid #343b4d;
+  border-radius: 0.65rem;
+}
+
+.mode-normal .fav-card-row > .btn-card {
+  margin: 0;
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.mode-normal .fav-card-row > .btn-ghost {
+  align-self: flex-end;
+  padding: 0.4rem 0.75rem;
+  margin: 0 0.65rem 0.45rem;
+  background-color: transparent;
+  border-color: transparent;
+  color: #b9b4a8;
+  font-size: 0.85rem;
+}
+
+.mode-normal .card-row-header .category-badge {
+  background-color: transparent;
+  color: #b9b4a8;
+  font-weight: 400;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+.mode-normal .history-date-badge {
+  color: #b9b4a8;
+  font-weight: 400;
+}
+
+.mode-normal .history-summary,
+.mode-normal .fav-card-row .card-row-desc {
+  font-weight: 400;
+  line-height: 1.7;
+}
+
 .detail-mode-normal .detail-step-bar {
   border-bottom: 1px solid #2b303d;
   padding-bottom: 0.65rem;
@@ -1708,6 +1813,14 @@ kbd {
   background-color: #f2c879;
   border-color: #fff2cc;
   color: #1c2028;
+}
+
+.mode-normal .tv-focusable:focus .category-badge,
+.mode-normal .tv-focusable[data-tv-focused="true"] .category-badge {
+  background-color: #1c2028;
+  color: #f2c879;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 /* 1920×1080 全高清电视视口：正文约 28～30px 起 */
@@ -1822,6 +1935,21 @@ kbd {
   .mode-normal .btn-nav {
     padding: 0.5rem 0.25rem;
   }
+  .mode-normal .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.3rem;
+    margin-bottom: 0.75rem;
+  }
+  .mode-normal .filter-bar .btn-chip {
+    flex-shrink: 0;
+  }
+  .mode-normal .pager-bar {
+    flex-wrap: wrap;
+  }
+  .mode-normal .pager-status {
+    font-size: 0.85rem;
+  }
   .mode-normal .today-stage {
     padding-top: 0;
   }
@@ -1849,9 +1977,6 @@ kbd {
     flex: 1 1 auto;
     margin-right: 0.4rem;
     padding: 0.6rem 0.75rem;
-  }
-  .detail-mode-normal .detail-bottom-actions .tv-focusable:disabled {
-    display: none;
   }
   .mode-normal .settings-card {
     padding: 1rem;

@@ -18,6 +18,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAppState } from '../app/AppState';
 import { useRouter } from '../app/router';
 import { categoryLabel, SOURCE_STATUS_LABELS } from '../data/content';
+import type { ProverbSummary } from '../data/types';
 import { StoryViewer } from '../components/StoryViewer';
 import { FocusButton } from '../tv/FocusButton';
 import {
@@ -51,21 +52,19 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
 
   const contrastItems = proverb ? repo.getContrast(proverb) : [];
   const relatedItems = proverb ? repo.getRelated(proverb) : [];
-  const relationButtons: Array<{ id: string; focusId: string; label: string; kind: 'contrast' | 'related' }> = [];
+  const relationButtons: Array<{ item: ProverbSummary; focusId: string; kind: 'contrast' | 'related' }> = [];
 
   for (let i = 0; i < contrastItems.length; i++) {
     relationButtons.push({
-      id: contrastItems[i].id,
+      item: contrastItems[i],
       focusId: 'detail-contrast-' + contrastItems[i].id,
-      label: '对照：' + contrastItems[i].text,
       kind: 'contrast',
     });
   }
   for (let i = 0; i < relatedItems.length; i++) {
     relationButtons.push({
-      id: relatedItems[i].id,
+      item: relatedItems[i],
       focusId: 'detail-related-' + relatedItems[i].id,
-      label: '相近：' + relatedItems[i].text,
       kind: 'related',
     });
   }
@@ -127,7 +126,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
   });
 
   useFocusGroup('detail-relations', {
-    layout: 'horizontal',
+    layout: 'grid',
     exits: {
       left: '@group:nav',
       right: null,
@@ -309,6 +308,9 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         <div className="detail-main-column">
           {showStep1 ? (
             <div className="detail-step-content step-1" data-testid="detail-step-content-1">
+              <h2 className="detail-proverb-title" data-testid="detail-proverb-title">
+                {proverb.text}
+              </h2>
               <div className="badge-group">
                 <span className="category-badge">{categoryLabel(proverb.category)}</span>
                 {proverb.tags.map((tag) => (
@@ -317,9 +319,6 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
                   </span>
                 ))}
               </div>
-              <h2 className="detail-proverb-title" data-testid="detail-proverb-title">
-                {proverb.text}
-              </h2>
               <div className="detail-block">
                 <h3 className="detail-block-title">白话解释</h3>
                 <p className="detail-block-text">{proverb.plainExplanation}</p>
@@ -388,43 +387,6 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
               </p>
             </div>
 
-            {/* 对照理解与相关内容展示区 */}
-            {contrastItems.length > 0 || relatedItems.length > 0 ? (
-              <div className="detail-block detail-block-relations" data-testid="detail-relations">
-                <h3 className="detail-block-title">对照与延伸思考</h3>
-                {proverb.contrastNote ? (
-                  <p className="detail-contrast-note" data-testid="detail-contrast-note">
-                    {proverb.contrastNote}
-                  </p>
-                ) : contrastItems.length > 0 ? (
-                  <p className="detail-contrast-note" data-testid="detail-contrast-note">
-                    「{proverb.text}」与下方老话可对照理解：二者分别针对不同的处境与风险提醒，适用条件不同，并非哪一句永远绝对正确。
-                  </p>
-                ) : null}
-
-                <div className="detail-relation-cards">
-                  {contrastItems.map((item) => (
-                    <div key={'con-' + item.id} className="relation-card relation-card-contrast">
-                      <div className="relation-card-head">
-                        <span className="relation-type-pill pill-contrast">可对照理解</span>
-                        <strong className="relation-card-title">{item.text}</strong>
-                      </div>
-                      <p className="relation-card-desc">{item.plainExplanation}</p>
-                    </div>
-                  ))}
-                  {relatedItems.map((item) => (
-                    <div key={'rel-' + item.id} className="relation-card relation-card-related">
-                      <div className="relation-card-head">
-                        <span className="relation-type-pill pill-related">相近互参</span>
-                        <strong className="relation-card-title">{item.text}</strong>
-                      </div>
-                      <p className="relation-card-desc">{item.plainExplanation}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             <div className="detail-source-row" data-testid="detail-source">
               <span className="source-status-tag">
                 {SOURCE_STATUS_LABELS[proverb.sourceStatus]}
@@ -470,7 +432,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
             down: firstRelationFocusId,
           }}
         >
-          {step < 2 ? '下一段 (' + (step + 2) + '/3) →' : '已是最后一段'}
+          {step === 0 ? '看生活故事 →' : step === 1 ? '看适用边界 →' : '已是最后一段'}
         </FocusButton>
 
         <FocusButton
@@ -492,7 +454,7 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         <FocusButton
           focusId="detail-back"
           group="detail-actions"
-          variant="default"
+          variant={step === 2 ? 'primary' : 'default'}
           onPress={() => {
             back();
           }}
@@ -507,35 +469,41 @@ export function DetailPage(props: DetailPageProps): JSX.Element {
         </FocusButton>
       </div>
 
-      {/* 关联与对照条目快捷跳转按钮栏（支持遥控器聚焦与鼠标点击） */}
       {firstRelationFocusId ? (
-        <div className="detail-relation-jump-bar" aria-label="关联与对照内容跳转">
-          <span className="relation-jump-label">延伸阅读跳转：</span>
-          {relationButtons.map((btn, idx) => {
-            const prevId = idx > 0 ? relationButtons[idx - 1].focusId : '@group:nav';
-            const nextId = idx < relationButtons.length - 1 ? relationButtons[idx + 1].focusId : null;
-            return (
+        <section className="detail-block detail-block-relations" data-testid="detail-relations" aria-label="延伸阅读">
+          <h2 className="detail-block-title">对照与延伸思考</h2>
+          {proverb.contrastNote ? (
+            <p className="detail-contrast-note" data-testid="detail-contrast-note">
+              {proverb.contrastNote}
+            </p>
+          ) : contrastItems.length > 0 ? (
+            <p className="detail-contrast-note" data-testid="detail-contrast-note">
+              「{proverb.text}」与下方老话可对照理解：二者针对不同的处境与风险，适用条件不同。
+            </p>
+          ) : null}
+          <div className="detail-relation-cards">
+            {relationButtons.map((btn) => (
               <FocusButton
                 key={btn.focusId}
                 focusId={btn.focusId}
                 group="detail-relations"
-                variant="chip"
-                onPress={() => {
-                  setStep(0);
-                  push({ name: 'detail', id: btn.id });
-                }}
-                nav={{
-                  left: prevId,
-                  right: nextId,
-                  up: 'detail-back',
-                  down: null,
-                }}
+                variant="card"
+                className={'relation-card relation-card-' + btn.kind}
+                ariaLabel={(btn.kind === 'contrast' ? '对照：' : '相近：') + btn.item.text + '，查看详情'}
+                onPress={() => push({ name: 'detail', id: btn.item.id })}
               >
-                {btn.label} →
+                <div className="relation-card-head">
+                  <span className={'relation-type-pill pill-' + btn.kind}>
+                    {btn.kind === 'contrast' ? '可对照理解' : '相近互参'}
+                  </span>
+                  <strong className="relation-card-title">{btn.item.text}</strong>
+                </div>
+                <p className="relation-card-desc">{btn.item.plainExplanation}</p>
+                <span className="relation-read-more" aria-hidden="true">阅读全文 →</span>
               </FocusButton>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </section>
       ) : null}
     </section>
   );

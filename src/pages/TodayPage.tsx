@@ -150,11 +150,6 @@ export function TodayPage(): JSX.Element {
                 <span className="category-badge" data-testid="today-category">
                   {categoryLabel(proverb.category)}
                 </span>
-                {proverb.tags.map((tag) => (
-                  <span key={tag} className="tag-badge">
-                    {tag}
-                  </span>
-                ))}
               </div>
               <span className="meta-date">
                 {formatFullDate(today)} · 已抽取
@@ -164,6 +159,12 @@ export function TodayPage(): JSX.Element {
             <h2 className="proverb-main-text" data-testid="today-proverb-text">
               {proverb.text}
             </h2>
+
+            <div className="badge-group topic-tags" aria-label="相关主题">
+              {proverb.tags.map((tag) => (
+                <span key={tag} className="tag-badge">{tag}</span>
+              ))}
+            </div>
 
             <div className="plain-explanation-box">
               <div className="box-label">白话解释</div>
@@ -202,7 +203,7 @@ export function TodayPage(): JSX.Element {
                   down: null,
                 }}
               >
-                {favored ? '★ 已收藏（按确认取消）' : '☆ 收藏这句话'}
+                {favored ? '★ 已收藏' : '☆ 收藏这句话'}
               </FocusButton>
             </div>
 

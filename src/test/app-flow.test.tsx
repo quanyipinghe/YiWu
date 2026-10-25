@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App, type AppProps } from '../app/App';
 import { AppStorage } from '../storage/storage';
 import { createEmptyData } from '../storage/schema';
+import { createRepo, DEFAULT_REPO } from '../data/content';
 
 // 启用 React 18 act 环境标记
 (window as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -89,6 +90,53 @@ afterEach(() => {
 });
 
 describe('全流程遥控器操作闭环 (App Integration)', () => {
+  it.each([['?tv=0', 1], ['?tv=1', 1], ['?tv=1', 2]] as const)('延伸阅读卡片直接跳转，遥控器跟随单列或双列布局（%s，%i 列）', (search, columns) => {
+    const storage = new AppStorage(window.localStorage);
+    const seed = createEmptyData();
+    seed.favorites = [{ id: 'san-si-er-hou-xing', addedAt: 1 }];
+    storage.save(seed);
+    const repo = createRepo([
+      {
+        ...DEFAULT_REPO.get('san-si-er-hou-xing')!,
+        contrastIds: ['wang-yang-bu-lao'],
+        relatedIds: ['mo-dao-bu-wu-kan-chai-gong'],
+      },
+      DEFAULT_REPO.get('wang-yang-bu-lao')!,
+      DEFAULT_REPO.get('mo-dao-bu-wu-kan-chai-gong')!,
+    ]);
+    renderApp({ repo, storage, search, initialRoute: 'favorites' });
+    const button = (id: string) =>
+      document.querySelector<HTMLButtonElement>('[data-focus-id="' + id + '"]')!;
+    act(() => button('fav-open-san-si-er-hou-xing').click());
+    act(() => button('detail-step-3').click());
+    const cards = document.querySelectorAll<HTMLButtonElement>('button.relation-card');
+    expect(cards.length).toBe(2);
+    if (search === '?tv=1') {
+      cards.forEach((card, index) => {
+        const left = (index % columns) * 220;
+        const top = Math.floor(index / columns) * 180;
+        card.getBoundingClientRect = () => ({
+          left, top, right: left + 200, bottom: top + 160,
+          width: 200, height: 160, x: left, y: top, toJSON: () => ({}),
+        });
+      });
+      act(() => button('detail-back').focus());
+      KEYS.down();
+      expect(activeFocusId()).toBe('detail-contrast-wang-yang-bu-lao');
+      if (columns === 1) KEYS.down();
+      else KEYS.right();
+      expect(activeFocusId()).toBe('detail-related-mo-dao-bu-wu-kan-chai-gong');
+      KEYS.enter();
+    } else {
+      act(() => cards[1].click());
+    }
+    expect(document.querySelector('[data-testid="detail-proverb-title"]')?.textContent)
+      .toBe('磨刀不误砍柴工');
+    act(() => button('detail-back').click());
+    expect(document.querySelector('[data-testid="detail-proverb-title"]')?.textContent)
+      .toBe('三思而后行');
+  });
+
   it('显示模式切换同步根字号模式，卸载后清理，普通模式不提供遥控器阅读入口', () => {
     renderApp({ search: '', initialRoute: 'settings' });
     const button = (id: string) =>
